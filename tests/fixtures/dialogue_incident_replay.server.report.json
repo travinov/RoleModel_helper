@@ -1,0 +1,140 @@
+{
+  "suite_name": "rolemodel_incident_replay_v1",
+  "generated_at_utc": "2026-05-14T05:09:32.776029+00:00",
+  "base_url": "https://87.242.86.193/rolemodel",
+  "fixture_path": "tests/fixtures/dialogue_incident_replay.json",
+  "target_success_rate_percent": 95.0,
+  "actual_success_rate_percent": 100.0,
+  "checks_total": 14,
+  "checks_passed": 14,
+  "required_consecutive_sessions": 4,
+  "actual_max_consecutive_sessions": 4,
+  "meets_global_target": true,
+  "meets_consecutive_target": true,
+  "critical_failures_summary": {},
+  "sessions": [
+    {
+      "name": "invalid_system_must_not_autoresolve",
+      "session_id": "40d98eb4-83cc-4d09-8a16-c4e2114beb27",
+      "checks_total": 4,
+      "checks_passed": 4,
+      "actual_success_rate_percent": 100.0,
+      "target_success_rate_percent": 95.0,
+      "meets_target": true,
+      "critical_hits": [],
+      "turns": [
+        {
+          "step": 1,
+          "user": "Мне нужен доступ в ЭФИР",
+          "assistant_text": "Не нашел 'ЭФИР' в справочнике АС, поэтому не записал это значение как АС.\n\nАС 'ЭФИР' не найдена в справочнике. Уточните официальное или рабочее название АС.",
+          "conversation_phase": "COLLECT_SYSTEM_HINT",
+          "pending_topic": "system",
+          "answer_type": null,
+          "instruction_mode": null,
+          "citations_count": 0,
+          "checks_total": 4,
+          "checks_passed": 4,
+          "turn_success_rate_percent": 100.0,
+          "failures": [],
+          "critical_hits": []
+        }
+      ]
+    },
+    {
+      "name": "nonsense_org_context_must_not_suggest_weak_as",
+      "session_id": "e1490e5f-d84d-4a10-9e88-a726a19f7750",
+      "checks_total": 3,
+      "checks_passed": 3,
+      "actual_success_rate_percent": 100.0,
+      "target_success_rate_percent": 95.0,
+      "meets_target": true,
+      "critical_hits": [],
+      "turns": [
+        {
+          "step": 1,
+          "user": "я ракетчик в Афганистане, какие у меня доступы?",
+          "assistant_text": "Не нашел 'ракетчик' в справочнике для поля 'должность', поэтому не записал это значение в контекст. Не нашел 'Афганистан' в справочнике для поля 'город', поэтому не записал это значение в контекст.\n\nУкажите вашу должность по штатной структуре.",
+          "conversation_phase": "COLLECT_POSITION",
+          "pending_topic": "position",
+          "answer_type": null,
+          "instruction_mode": null,
+          "citations_count": 0,
+          "checks_total": 3,
+          "checks_passed": 3,
+          "turn_success_rate_percent": 100.0,
+          "failures": [],
+          "critical_hits": []
+        }
+      ]
+    },
+    {
+      "name": "invalid_system_then_org_slots_still_wait_system",
+      "session_id": "fc521676-0c8e-4468-8304-36878501ae25",
+      "checks_total": 4,
+      "checks_passed": 4,
+      "actual_success_rate_percent": 100.0,
+      "target_success_rate_percent": 95.0,
+      "meets_target": true,
+      "critical_hits": [],
+      "turns": [
+        {
+          "step": 1,
+          "user": "Нужны роли в Херон",
+          "assistant_text": "Не нашел 'Херон' в справочнике АС, поэтому не записал это значение как АС.\n\nАС 'Херон' не найдена в справочнике. Уточните официальное или рабочее название АС.",
+          "conversation_phase": "COLLECT_SYSTEM_HINT",
+          "pending_topic": "system",
+          "answer_type": null,
+          "instruction_mode": null,
+          "citations_count": 0,
+          "checks_total": 2,
+          "checks_passed": 2,
+          "turn_success_rate_percent": 100.0,
+          "failures": [],
+          "critical_hits": []
+        },
+        {
+          "step": 2,
+          "user": "риск-менеджер",
+          "assistant_text": "Не нашел 'риск-менеджер' в справочнике АС, поэтому не записал это значение как АС.\n\nАС 'риск-менеджер' не найдена в справочнике. Уточните официальное или рабочее название АС.",
+          "conversation_phase": "COLLECT_SYSTEM_HINT",
+          "pending_topic": "system",
+          "answer_type": null,
+          "instruction_mode": null,
+          "citations_count": 0,
+          "checks_total": 2,
+          "checks_passed": 2,
+          "turn_success_rate_percent": 100.0,
+          "failures": [],
+          "critical_hits": []
+        }
+      ]
+    },
+    {
+      "name": "unknown_system_typo_must_not_be_accepted",
+      "session_id": "552a2c9e-b239-429a-bb07-ce33925a833b",
+      "checks_total": 3,
+      "checks_passed": 3,
+      "actual_success_rate_percent": 100.0,
+      "target_success_rate_percent": 95.0,
+      "meets_target": true,
+      "critical_hits": [],
+      "turns": [
+        {
+          "step": 1,
+          "user": "Подбери роли в Эфирк",
+          "assistant_text": "Не нашел 'Эфирк' в справочнике АС, поэтому не записал это значение как АС.\n\nАС 'Эфирк' не найдена в справочнике. Уточните официальное или рабочее название АС.",
+          "conversation_phase": "COLLECT_SYSTEM_HINT",
+          "pending_topic": "system",
+          "answer_type": null,
+          "instruction_mode": null,
+          "citations_count": 0,
+          "checks_total": 3,
+          "checks_passed": 3,
+          "turn_success_rate_percent": 100.0,
+          "failures": [],
+          "critical_hits": []
+        }
+      ]
+    }
+  ]
+}

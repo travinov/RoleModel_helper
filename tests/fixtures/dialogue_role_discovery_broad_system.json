@@ -1,0 +1,47 @@
+{
+  "name": "broad_role_discovery_efs_to_sberhelp",
+  "turns": [
+    {
+      "user": "Какая мне необходима роль в АС ЕФС?",
+      "expect": {
+        "conversation_phase": "COLLECT_POSITION",
+        "pending_topic": "position",
+        "contains": ["должность"]
+      }
+    },
+    {
+      "user": "риск-менеджер",
+      "expect": {
+        "conversation_phase": "COLLECT_CITY",
+        "pending_topic": "city",
+        "contains": ["город"]
+      }
+    },
+    {
+      "user": "Москва",
+      "expect": {
+        "conversation_phase": "COLLECT_DEPARTMENT",
+        "pending_topic": "department",
+        "contains": ["отдел"]
+      }
+    },
+    {
+      "user": "Отд КК НСК_Риск-менеджер",
+      "expect": {
+        "conversation_phase": "BROWSE_SYSTEMS",
+        "pending_topic": "system",
+        "contains": ["Я нашел несколько АС"]
+      }
+    },
+    {
+      "user": "Посмотри SberHelp",
+      "expect": {
+        "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+        "contains": [
+          "ЕФС База знаний SberHelp",
+          "По умолчанию доступны следующие роли"
+        ]
+      }
+    }
+  ]
+}

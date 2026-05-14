@@ -1,0 +1,569 @@
+{
+  "suite_name": "rolemodel_dialog_benchmark_v2_15_sessions",
+  "description": "Проверка 15 базовых диалогов из Doc/base_dialogs.md (семантические ожидания).",
+  "sessions": [
+    {
+      "name": "d1_broad_discovery_efs_to_sberhelp",
+      "turns": [
+        {
+          "user": "Какая мне необходима роль в АС ЕФС?",
+          "expect": {
+            "conversation_phase": "COLLECT_POSITION",
+            "pending_topic": "position",
+            "contains_any": ["должность", "укажите вашу должность"]
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "conversation_phase": "COLLECT_CITY",
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отд КК НСК_Риск-менеджер",
+          "expect": {
+            "conversation_phase": "BROWSE_SYSTEMS",
+            "pending_topic": "system",
+            "contains_any": ["несколько АС", "выберите нужную АС"]
+          }
+        },
+        {
+          "user": "Тут нет необходимой АС",
+          "expect": {
+            "contains_any": ["следующие варианты", "других АС", "показываю"]
+          }
+        },
+        {
+          "user": "Ок",
+          "expect": {
+            "contains_any": ["Других АС", "ключевые слова", "рабочее название"]
+          }
+        },
+        {
+          "user": "ЕФС ЕРМ ЦКР (И2) [CI01982477]",
+          "expect": {
+            "contains_any": ["доступны", "роли", "профиль"]
+          }
+        },
+        {
+          "user": "Возможно я ошибся. Посмотри SberHelp",
+          "expect": {
+            "answer_type": "ROLE_DISCOVERY",
+            "contains_any": ["SberHelp", "По умолчанию"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d2_role_acquisition_specific_role",
+      "turns": [
+        {
+          "user": "Как мне получить роль ЕРМ.ЦКР SberHelp Читатель SberHelp в ЕФС База знаний SberHelp?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "answer_type": "ROLE_ACQUISITION",
+            "contains_any": ["по умолчанию", "по запросу"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d3_justification_lookup",
+      "turns": [
+        {
+          "user": "Какое обоснование указать для доступа в Пуаро 2.0?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "requested_entitlement",
+            "contains_any": ["какую именно роль", "уточните"]
+          }
+        },
+        {
+          "user": "роль Андеррайтер ЮЛ Средний+ МЦА",
+          "expect": {
+            "answer_type": "JUSTIFICATION_LOOKUP",
+            "contains_any": ["обоснование", "не найдено"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d4_instruction_only",
+      "turns": [
+        {
+          "user": "Как проверить доступные АС и применить ролевую модель?",
+          "expect": {
+            "answer_type": "INSTRUCTION_LOOKUP",
+            "conversation_phase": "ANSWER_INSTRUCTION",
+            "instruction_mode_any_of": ["INLINE_DOC", "RAG"],
+            "citations_min": 1
+          }
+        },
+        {
+          "user": "Что делать, если роли не применились?",
+          "expect": {
+            "answer_type": "INSTRUCTION_LOOKUP",
+            "contains_any": ["ДРУГ", "техническ", "Effectiveness"],
+            "citations_min": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "d5_context_switch_interrupts",
+      "turns": [
+        {
+          "user": "Какие роли доступны в ЕФС?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "system"
+          }
+        },
+        {
+          "user": "Нет, давай другую систему — ЕФС.Сотрудники.Риск-решения",
+          "expect": {
+            "contains_any": ["Риск-решения", "выберите", "доступны"],
+            "forbid_contains": ["Не удалось распознать подтверждение"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d6_city_typo_with_candidates",
+      "turns": [
+        {
+          "user": "Какие роли у меня в ЕФС?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "мск",
+          "expect": {
+            "pending_topic": "city",
+            "contains_any": ["выберите", "вариант", "город"]
+          }
+        },
+        {
+          "user": "1",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "system"
+          }
+        }
+      ]
+    },
+    {
+      "name": "d7_department_non_staff_name",
+      "turns": [
+        {
+          "user": "Какая роль мне нужна в ЕФС.Сотрудники.Риск-решения?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отд КК",
+          "expect": {
+            "pending_topic": "department",
+            "contains_any": ["не найдено", "выберите", "уточните"]
+          }
+        },
+        {
+          "user": "Отд КК НСК_Риск-менеджер",
+          "expect": {
+            "answer_type": "ROLE_DISCOVERY",
+            "contains_any": ["доступны", "по умолчанию", "по запросу"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d8_ambiguous_position",
+      "turns": [
+        {
+          "user": "Какие мне доступны роли в ЕФС ЕРМ ЦКР?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "менеджер",
+          "expect": {
+            "pending_topic": "position",
+            "contains_any": ["выберите", "должности", "вариант"]
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "answer_type": "ROLE_DISCOVERY",
+            "contains_any": ["доступны", "по умолчанию", "по запросу"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d9_system_pagination",
+      "turns": [
+        {
+          "user": "Какая мне нужна роль в ЕФС?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "system",
+            "contains_any": ["первые варианты", "выберите", "показать еще"]
+          }
+        },
+        {
+          "user": "показать еще",
+          "expect": {
+            "contains_any": ["следующие варианты", "это все найденные", "показываю"]
+          }
+        },
+        {
+          "user": "3",
+          "expect": {
+            "contains_any": ["профиль", "доступны", "роль"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d10_role_not_found",
+      "turns": [
+        {
+          "user": "Как мне получить роль Несуществующая роль Х в ЕФС База знаний SberHelp?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "answer_type": "ROLE_ACQUISITION",
+            "contains_any": ["не найдена", "не найдена"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d11_role_by_request_hybrid",
+      "turns": [
+        {
+          "user": "Как мне получить роль ВАРМ Стандарт Альфа в ЕФС.Сотрудники.Риск-решения?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отд КК НСК_Риск-менеджер",
+          "expect": {
+            "answer_type": "ROLE_ACQUISITION",
+            "contains_any": ["по умолчанию", "по запросу"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d12_justification_requires_role",
+      "turns": [
+        {
+          "user": "Какое обоснование мне указать в ЕФС.Сотрудники.Риск-решения?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "requested_entitlement",
+            "contains_any": ["какую именно роль", "уточните"]
+          }
+        },
+        {
+          "user": "Андеррайтер ЮЛ Средний+ МЦА",
+          "expect": {
+            "answer_type": "JUSTIFICATION_LOOKUP",
+            "contains_any": ["обоснование", "не найдено"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d13_instruction_interrupt_and_return",
+      "turns": [
+        {
+          "user": "Какие роли доступны в ЕФС?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "system"
+          }
+        },
+        {
+          "user": "Пока ищешь, подскажи, как войти в АС?",
+          "expect": {
+            "answer_type": "INSTRUCTION_LOOKUP",
+            "citations_min": 1
+          }
+        },
+        {
+          "user": "Ок, продолжаем по ролям",
+          "expect": {
+            "contains_any": ["выберите", "АС", "доступны", "показываю"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "d14_reset_context_new_request",
+      "turns": [
+        {
+          "user": "Какие роли доступны в ЕФС?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отдел Фрод экспертизы",
+          "expect": {
+            "pending_topic": "system"
+          }
+        },
+        {
+          "user": "Сбрось контекст",
+          "expect": {
+            "contains_any": ["Контекст сброшен", "новый вопрос"]
+          }
+        },
+        {
+          "user": "Как проверить доступные АС?",
+          "expect": {
+            "answer_type": "INSTRUCTION_LOOKUP",
+            "citations_min": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "d15_alias_typo_system_name",
+      "turns": [
+        {
+          "user": "Какая мне нужна роль в ЕФС Риск решния?",
+          "expect": {
+            "pending_topic": "position"
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "city"
+          }
+        },
+        {
+          "user": "Москва",
+          "expect": {
+            "pending_topic": "department"
+          }
+        },
+        {
+          "user": "Отд КК НСК_Риск-менеджер",
+          "expect": {
+            "contains_any": ["Риск-решения", "выберите", "АС"]
+          }
+        },
+        {
+          "user": "Да, ЕФС.Сотрудники.Риск-решения",
+          "expect": {
+            "answer_type": "ROLE_DISCOVERY",
+            "contains_any": ["для АС", "по умолчанию", "по запросу"]
+          }
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "target_success_rate_percent": 95,
+    "consecutive_sessions_required": 5,
+    "critical_failures": [
+      "loop_unrecognized_confirmation",
+      "missing_required_slot_sequence",
+      "uncited_instruction_answer"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+# Secrets / local runtime
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS/editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Local generated backups and temporary Office files
+Doc/backups/
+~$*.xlsx
+~$*.pptx
+
+# Logs / local dumps
+*.log
+*.tmp

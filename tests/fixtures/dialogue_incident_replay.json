@@ -1,0 +1,87 @@
+{
+  "suite_name": "rolemodel_incident_replay_v1",
+  "scoring": {
+    "target_success_rate_percent": 95,
+    "consecutive_sessions_required": 4,
+    "critical_failures": [
+      "missing_required_slot_sequence",
+      "wrong_context_state",
+      "uncited_instruction_answer"
+    ]
+  },
+  "sessions": [
+    {
+      "name": "invalid_system_must_not_autoresolve",
+      "turns": [
+        {
+          "user": "Мне нужен доступ в ЭФИР",
+          "expect": {
+            "pending_topic": "system",
+            "state_expect": {
+              "context.system": "__NULL__"
+            },
+            "state_forbid": {
+              "context.system.system_name": "ЭФИР"
+            },
+            "contains_all": ["АС", "не найдена"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "nonsense_org_context_must_not_suggest_weak_as",
+      "turns": [
+        {
+          "user": "я ракетчик в Афганистане, какие у меня доступы?",
+          "expect": {
+            "pending_topic": "position",
+            "state_expect": {
+              "context.system": "__NULL__"
+            },
+            "state_forbid": {
+              "context.system.system_name": "АС ЕФС. Наш бизнес"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid_system_then_org_slots_still_wait_system",
+      "turns": [
+        {
+          "user": "Нужны роли в Херон",
+          "expect": {
+            "pending_topic": "system",
+            "state_expect": {
+              "context.system": "__NULL__"
+            }
+          }
+        },
+        {
+          "user": "риск-менеджер",
+          "expect": {
+            "pending_topic": "system",
+            "state_expect": {
+              "context.system": "__NULL__"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "unknown_system_typo_must_not_be_accepted",
+      "turns": [
+        {
+          "user": "Подбери роли в Эфирк",
+          "expect": {
+            "pending_topic": "system",
+            "state_expect": {
+              "context.system": "__NULL__"
+            },
+            "contains_any": ["не найдена", "уточните"]
+          }
+        }
+      ]
+    }
+  ]
+}
