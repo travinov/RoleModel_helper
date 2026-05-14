@@ -545,6 +545,10 @@
         justify-content: flex-start;
       }
 
+      .message-row.transient {
+        opacity: 0.82;
+      }
+
       .message {
         position: relative;
         max-width: min(92%, 560px);
@@ -575,6 +579,16 @@
         font-size: 15px;
         overflow-wrap: anywhere;
         word-break: break-word;
+      }
+
+      .message.loading .message-copy::after {
+        content: "";
+        display: inline-block;
+        min-width: 18px;
+        margin-left: 3px;
+        overflow: hidden;
+        vertical-align: bottom;
+        animation: loading-dots 1.2s steps(4, end) infinite;
       }
 
       .message-meta {
@@ -789,6 +803,12 @@
         color: var(--ink-faint);
       }
 
+      textarea:disabled {
+        opacity: 0.72;
+        cursor: wait;
+        background: rgba(255,255,255,0.55);
+      }
+
       .send-button {
         width: 52px;
         height: 52px;
@@ -821,6 +841,13 @@
           opacity: 1;
           transform: translateY(0) scale(1);
         }
+      }
+
+      @keyframes loading-dots {
+        0% { content: ""; }
+        25% { content: "."; }
+        50% { content: ".."; }
+        75%, 100% { content: "..."; }
       }
 
       @media (min-width: 961px) {
@@ -1055,6 +1082,8 @@
       function setBusy(nextState) {
         isSending = nextState;
         sendEl.disabled = nextState;
+        inputEl.disabled = nextState;
+        inputEl.setAttribute("aria-busy", String(nextState));
         newChatEl.disabled = nextState;
         feedbackUpEl.disabled = nextState || !sessionId;
         feedbackDownEl.disabled = nextState || !sessionId;
@@ -1409,11 +1438,26 @@
         return card;
       }
 
+      function removeTransientMessages() {
+        messagesEl.querySelectorAll(".message-row.transient").forEach((node) => node.remove());
+      }
+
+      function appendTransientMessage(role, text, { loading = false } = {}) {
+        const row = appendMessage(role, text, null);
+        if (!row) return null;
+        row.classList.add("transient");
+        if (loading) {
+          const bubble = row.querySelector(".message");
+          if (bubble) bubble.classList.add("loading");
+        }
+        return row;
+      }
+
       function appendMessage(role, text, payload, messageId = null) {
         if (messageId !== null && messageId !== undefined) {
           const normalizedId = Number(messageId);
           if (Number.isFinite(normalizedId) && renderedMessageIds.has(normalizedId)) {
-            return;
+            return null;
           }
           if (Number.isFinite(normalizedId)) {
             renderedMessageIds.add(normalizedId);
@@ -1481,6 +1525,7 @@
         row.appendChild(bubble);
         messagesEl.appendChild(row);
         messagesEl.scrollTop = messagesEl.scrollHeight;
+        return row;
       }
 
       async function ensureSession() {
@@ -1502,6 +1547,7 @@
           throw new Error(`HTTP ${response.status}`);
         }
         const snapshot = await response.json();
+        removeTransientMessages();
         const messages = Array.isArray(snapshot.messages) ? snapshot.messages : [];
         messages.forEach((message) => {
           const role = String(message.role || "").toLowerCase() === "assistant" ? "assistant" : "user";
@@ -1574,6 +1620,12 @@
         }
 
         setBusy(true);
+        appendTransientMessage("user", text);
+        appendTransientMessage(
+          "assistant",
+          hasOverride ? "Применяю выбранный вариант" : "Формирую ответ",
+          { loading: true }
+        );
         let shouldClearInput = false;
         try {
           const response = await fetchWithTimeout(apiUrl(`/chat/sessions/${sessionId}/messages`), {
@@ -1607,6 +1659,7 @@
           if (recovered) {
             shouldClearInput = false;
           } else {
+            removeTransientMessages();
             appendMessage(
               "assistant",
               "Не удалось получить ответ от сервера. Повторите отправку или обновите страницу.",
