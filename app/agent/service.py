@@ -68,6 +68,8 @@ SLOT_ENTITY_MIN_SCORE = {
     "position": 0.45,
 }
 SYSTEM_ENTITY_MIN_SCORE = 0.45
+ORG_SLOT_TOPICS = {"position", "city", "department"}
+PENDING_SYSTEM_CHANGE_CONFIDENCE = 0.70
 SLOT_CONFIRM_GAP = 0.10
 ROLE_DISCOVERY_LIST_LIMIT = 20
 PHASE_BY_SLOT = {
@@ -180,6 +182,8 @@ class ChatAgent:
                     intent_type="UNKNOWN",
                     dialog_act="RESET_CONTEXT",
                 )
+
+        self._apply_pending_slot_guardrail(session_id, state, interpretation, text)
 
         if interpretation.dialog_act in {"SELECT_OPTION", "SHOW_MORE"}:
             pending_question = state.get("pending_question") or {}
@@ -1187,6 +1191,141 @@ class ChatAgent:
         )
         self.search_repository.set_session_resolution(session_id, intent_type=next_goal)
 
+    def _apply_pending_slot_guardrail(
+        self,
+        session_id: str,
+        state: dict[str, Any],
+        interpretation: TurnInterpretation,
+        raw_text: str,
+    ) -> None:
+        pending_question = state.get("pending_question") or {}
+        pending_topic = str(pending_question.get("topic") or "")
+        if pending_question.get("kind") != "slot_request" or pending_topic not in ORG_SLOT_TOPICS:
+            return
+        if interpretation.intent_type == "INSTRUCTION_LOOKUP" or interpretation.dialog_act == "RESET_CONTEXT":
+            return
+
+        entities = dict(interpretation.entities or {})
+        system_raw = self._clean_slot_text(entities.get("system_raw"))
+        explicit_system_change = (
+            interpretation.dialog_act == "CHANGE_SYSTEM"
+            and interpretation.context_shift == "CHANGE_SYSTEM_FOCUS"
+            and interpretation.confidence >= PENDING_SYSTEM_CHANGE_CONFIDENCE
+            and bool(system_raw)
+        )
+        if explicit_system_change:
+            self.search_repository.log_tool_call(
+                session_id,
+                ToolAttempt(
+                    tool_name="pending_slot_guardrail",
+                    attempt_no=1,
+                    input_payload={"pending_topic": pending_topic, "text": raw_text},
+                    result_status="success",
+                    result_summary="explicit_system_change_allowed",
+                ),
+                {"system_raw": system_raw},
+            )
+            return
+
+        expected_key = self._slot_key_for_topic(pending_topic)
+        if not expected_key:
+            return
+
+        expected_value = self._clean_slot_text(entities.get(expected_key))
+        if not expected_value:
+            expected_value = self._extract_pending_slot_value(pending_topic, raw_text, state)
+        if not expected_value:
+            expected_value = self._clean_slot_text(raw_text)
+        if not expected_value:
+            return
+
+        next_entities = {expected_key: expected_value}
+        removed_entities = {
+            key: value
+            for key, value in entities.items()
+            if key != expected_key and value not in (None, "", [])
+        }
+        if interpretation.entities != next_entities or interpretation.context_shift in {"CHANGE_SYSTEM_FOCUS", "CHANGE_ORG_CONTEXT"}:
+            interpretation.entities = next_entities
+            interpretation.context_shift = "NONE"
+            interpretation.dialog_act = "PROVIDE_SLOT"
+            self.search_repository.log_tool_call(
+                session_id,
+                ToolAttempt(
+                    tool_name="pending_slot_guardrail",
+                    attempt_no=1,
+                    input_payload={
+                        "pending_topic": pending_topic,
+                        "text": raw_text,
+                        "incoming_entities": entities,
+                    },
+                    result_status="success",
+                    result_summary="kept_expected_slot",
+                ),
+                {
+                    "kept_entity": {expected_key: expected_value},
+                    "removed_entities": removed_entities,
+                    "allowed_system_change": False,
+                },
+            )
+
+    def _extract_pending_slot_value(
+        self,
+        slot_name: str,
+        raw_text: str,
+        state: dict[str, Any],
+    ) -> Optional[str]:
+        segments = self._split_mixed_segments(raw_text)
+        if not segments:
+            return None
+        best_value: Optional[str] = None
+        best_score = -1.0
+        for segment in segments:
+            for variant in self._pending_slot_variants(slot_name, segment):
+                validation = self._validate_entity_value_for_org_slot(
+                    session_id=str(state.get("session_id") or ""),
+                    slot_name=slot_name,
+                    raw_value=variant,
+                    state=state,
+                    log_probe=False,
+                )
+                if not validation.get("valid"):
+                    continue
+                score = 1.0 if validation.get("exact") else float(validation.get("best_score") or 0.0)
+                if score > best_score:
+                    best_score = score
+                    best_value = variant
+        return best_value
+
+    @staticmethod
+    def _pending_slot_variants(slot_name: str, value: str) -> list[str]:
+        cleaned = str(value or "").strip(" .")
+        if not cleaned:
+            return []
+        variants = [cleaned]
+        normalized = normalize_text(cleaned)
+        label_prefixes = {
+            "department": ("отдел", "подразделение", "департамент"),
+            "city": ("город", "г"),
+            "position": ("должность", "позиция"),
+        }.get(slot_name, ())
+        for prefix in label_prefixes:
+            if normalized == prefix:
+                continue
+            if normalized.startswith(f"{prefix} "):
+                stripped = cleaned.split(maxsplit=1)[1].strip(" .")
+                if stripped:
+                    variants.append(stripped)
+                break
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for item in variants:
+            key = normalize_text(item)
+            if key and key not in seen:
+                seen.add(key)
+                deduped.append(item)
+        return deduped
+
     def _apply_entities(
         self,
         session_id: str,
@@ -1202,16 +1341,18 @@ class ChatAgent:
         pending_topic = str(pending_question.get("topic") or "")
         if (
             pending_question.get("kind") == "slot_request"
-            and pending_topic in {"position", "city", "department"}
+            and pending_topic in ORG_SLOT_TOPICS
             and entities.get(f"{pending_topic}_raw")
         ):
             result["answered_org_slot"] = True
-        allow_direct_system_detection = pending_topic not in {"position", "city", "department", "requested_entitlement"}
+        allow_direct_system_detection = pending_topic not in ORG_SLOT_TOPICS | {"requested_entitlement"}
         if allow_direct_system_detection and not entities.get("system_raw") and not state.get("resolved_system_id"):
             direct_system = self._detect_direct_system_entity(raw_text)
             if direct_system:
                 entities["system_raw"] = direct_system
-        mixed_result = self._parse_mixed_slot_input(raw_text, state, interpretation)
+        mixed_result = {"used": False}
+        if pending_topic not in ORG_SLOT_TOPICS:
+            mixed_result = self._parse_mixed_slot_input(raw_text, state, interpretation)
         if mixed_result.get("used"):
             for key, value in mixed_result.get("entities", {}).items():
                 entities.setdefault(key, value)

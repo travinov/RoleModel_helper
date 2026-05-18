@@ -868,6 +868,144 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(response.context["city"], "Москва")
         self.assertIsNone(response.context["department"])
 
+    def test_pending_department_does_not_rewrite_system_from_answer_text(self) -> None:
+        self.repo.systems[21] = {
+            "id": 21,
+            "system_name_raw": "АС Залоги (ПРОМ) (И2) [CI00000021]",
+            "ci_code": "[CI00000021]",
+        }
+        self.repo.systems[22] = {
+            "id": 22,
+            "system_name_raw": "АС Мониторинг и анализ финансовых институтов (MAFIN) (И2) [CI00000022]",
+            "ci_code": "[CI00000022]",
+        }
+        self.repo.system_candidates_map["Финансовые институты"] = [
+            {
+                "system_id": 22,
+                "system_name_raw": self.repo.systems[22]["system_name_raw"],
+                "ci_code": "[CI00000022]",
+                "alias_text": "Финансовые институты",
+                "score": 0.93,
+            }
+        ]
+        self.repo.department_candidates_map[("Финансовые институты", "Москва")] = [
+            {
+                "value": "Отдел экспертизы финансовых институтов",
+                "score": 0.94,
+            }
+        ]
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="ROLE_DISCOVERY",
+            last_intent_type="ROLE_DISCOVERY",
+            system_raw=self.repo.systems[21]["system_name_raw"],
+            resolved_system_id=21,
+            position_raw="Андеррайтер",
+            city_raw="Москва",
+            pending_question={
+                "kind": "slot_request",
+                "topic": "department",
+                "prompt": "Укажите отдел",
+            },
+        )
+
+        def forced_department_answer(*_args, **_kwargs):
+            return {
+                "dialog_act": "PROVIDE_SLOT",
+                "intent_type": "ROLE_DISCOVERY",
+                "entities": {
+                    "system_raw": "Финансовые институты",
+                    "department_raw": "Финансовые институты",
+                },
+                "slot_candidates": {},
+                "confidence": 0.82,
+                "goal_transition": "STAY",
+                "context_shift": "CHANGE_SYSTEM_FOCUS",
+                "needs_clarification": False,
+                "references_pending_question": True,
+                "user_correction": False,
+                "reasoning_trace_short": "department_answer_with_system_like_text",
+            }
+
+        self.agent.gigachat.complete_json = forced_department_answer
+        self.agent.handle_message("s1", "Финансовые институты")
+
+        state = self.repo.get_slot_state("s1")
+        self.assertEqual(state.get("resolved_system_id"), 21)
+        self.assertEqual(state.get("system_raw"), self.repo.systems[21]["system_name_raw"])
+        self.assertEqual(state.get("department_raw"), "Отдел экспертизы финансовых институтов")
+
+    def test_pending_department_extracts_expected_slot_from_mixed_reply(self) -> None:
+        self.repo.systems[21] = {
+            "id": 21,
+            "system_name_raw": "АС Залоги (ПРОМ) (И2) [CI00000021]",
+            "ci_code": "[CI00000021]",
+        }
+        self.repo.system_candidates_map["АС Залоги"] = [
+            {
+                "system_id": 21,
+                "system_name_raw": self.repo.systems[21]["system_name_raw"],
+                "ci_code": "[CI00000021]",
+                "score": 0.95,
+            }
+        ]
+        self.repo.position_candidates_map[("андеррайтер", "Москва", None)] = [
+            {"value": "Андеррайтер", "score": 0.96}
+        ]
+        self.repo.department_candidates_map[("отдел ФИ", "Москва")] = [
+            {
+                "value": "Отдел экспертизы финансовых институтов",
+                "score": 0.91,
+                "alias_text": "ФИ",
+                "alias_class": "SAFE",
+            }
+        ]
+        self.repo.department_candidates_map[("ФИ", "Москва")] = list(
+            self.repo.department_candidates_map[("отдел ФИ", "Москва")]
+        )
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="ROLE_DISCOVERY",
+            last_intent_type="ROLE_DISCOVERY",
+            system_raw=self.repo.systems[21]["system_name_raw"],
+            resolved_system_id=21,
+            position_raw="Андеррайтер",
+            city_raw="Москва",
+            pending_question={
+                "kind": "slot_request",
+                "topic": "department",
+                "prompt": "Укажите отдел",
+            },
+        )
+
+        def forced_mixed_answer(*_args, **_kwargs):
+            return {
+                "dialog_act": "PROVIDE_SLOT",
+                "intent_type": "ROLE_DISCOVERY",
+                "entities": {
+                    "system_raw": "АС Залоги",
+                    "position_raw": "андеррайтер",
+                    "department_raw": "отдел ФИ",
+                },
+                "slot_candidates": {},
+                "confidence": 0.84,
+                "goal_transition": "STAY",
+                "context_shift": "NONE",
+                "needs_clarification": False,
+                "references_pending_question": True,
+                "user_correction": False,
+                "reasoning_trace_short": "mixed_department_answer",
+            }
+
+        self.agent.gigachat.complete_json = forced_mixed_answer
+        self.agent.handle_message("s1", "АС Залоги, андеррайтер, отдел ФИ")
+
+        state = self.repo.get_slot_state("s1")
+        self.assertEqual(state.get("resolved_system_id"), 21)
+        self.assertEqual(state.get("system_raw"), self.repo.systems[21]["system_name_raw"])
+        self.assertEqual(state.get("position_raw"), "Андеррайтер")
+        self.assertEqual(state.get("department_raw"), "Отдел экспертизы финансовых институтов")
+
     def test_interpretation_detects_system_change_during_profile_confirmation(self) -> None:
         self.repo.update_slot_state(
             "s1",
