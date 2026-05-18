@@ -1,0 +1,3198 @@
+{
+  "date": "2026-05-15",
+  "timezone": "Europe/Moscow",
+  "start": "2026-05-15T00:00:00+03:00",
+  "end": "2026-05-16T00:00:00+03:00",
+  "sessions": [
+    {
+      "session_id": "854dc7a6-1b28-4061-8818-30d2099c8d3e",
+      "created_at": "2026-05-15T08:58:55.899771+03:00",
+      "updated_at": "2026-05-15T09:03:38.722713+03:00",
+      "current_intent_type": "ROLE_DISCOVERY",
+      "last_intent_type": "ROLE_DISCOVERY",
+      "active_goal": "ROLE_DISCOVERY",
+      "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+      "resolved_system_id": 105,
+      "resolved_profile_id": null,
+      "rating": "UP",
+      "feedback_comment": null,
+      "feedback_created_at": "2026-05-15T09:03:38.722713+03:00",
+      "feedback_updated_at": "2026-05-15T09:03:38.722713+03:00",
+      "messages": [
+        {
+          "id": 3103,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T08:58:55.924167+03:00"
+        },
+        {
+          "id": 3104,
+          "role": "USER",
+          "message_text": "АС Эфир",
+          "structured_payload": null,
+          "created_at": "2026-05-15T08:59:12.990965+03:00"
+        },
+        {
+          "id": 3105,
+          "role": "ASSISTANT",
+          "message_text": "Укажите вашу должность по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Эфир",
+              "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+              "system_id_hint": 105
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 5,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "position",
+              "prompt": "Укажите вашу должность по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_POSITION",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T08:59:16.953453+03:00"
+        },
+        {
+          "id": 3106,
+          "role": "USER",
+          "message_text": "Риск-менеджер",
+          "structured_payload": null,
+          "created_at": "2026-05-15T08:59:36.186049+03:00"
+        },
+        {
+          "id": 3107,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш город по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": "Риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Риск-менеджер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Эфир",
+              "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+              "system_id_hint": 105
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 10,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "city",
+              "prompt": "Укажите ваш город по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_CITY",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T08:59:48.305990+03:00"
+        },
+        {
+          "id": 3108,
+          "role": "USER",
+          "message_text": "Санкт Петербург",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:00:05.850249+03:00"
+        },
+        {
+          "id": 3109,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш отдел или подразделение.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Санкт-Петербург",
+              "system": null,
+              "profile": null,
+              "position": "Риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Санкт-Петербург",
+              "position": "Риск-менеджер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Эфир",
+              "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+              "system_id_hint": 105
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 15,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "department",
+              "prompt": "Укажите ваш отдел или подразделение.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:00:14.662439+03:00"
+        },
+        {
+          "id": 3110,
+          "role": "USER",
+          "message_text": "Отдел 3",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:00:31.416658+03:00"
+        },
+        {
+          "id": 3111,
+          "role": "ASSISTANT",
+          "message_text": "Для вас, на основании должности Риск-менеджер, города Санкт-Петербург и отдела Отдел экспертизы кредитных рисков корпоративных клиентов №3, для АС ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР.\nПо умолчанию доступны следующие роли: Полномочия: Рабочее_место_РКИБ_Риск-менеджер (РМ); Полномочия: Рабочее_место_РКИБ_СиМ_Исполнитель задач.\nПо требованию доступны следующие роли: нет.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+          "structured_payload": {
+            "answer": {
+              "profile": null,
+              "systems": [],
+              "citations": [],
+              "answer_type": "ROLE_DISCOVERY",
+              "instruction": null,
+              "summary_text": "Для вас, на основании должности Риск-менеджер, города Санкт-Петербург и отдела Отдел экспертизы кредитных рисков корпоративных клиентов №3, для АС ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР.\nПо умолчанию доступны следующие роли: Полномочия: Рабочее_место_РКИБ_Риск-менеджер (РМ); Полномочия: Рабочее_место_РКИБ_СиМ_Исполнитель задач.\nПо требованию доступны следующие роли: нет.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+              "justification": null,
+              "default_accesses": [
+                {
+                  "system_id": 105,
+                  "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Стройка, МУР, СБАР, КИ и КЮЛ на всех сотрудников всех площадок (кроме ГРМ Москвы)  (№: P00053891)"
+                  ],
+                  "entitlement_id": 320,
+                  "inline_comment": null,
+                  "entitlement_name": "Рабочее_место_РКИБ_Риск-менеджер (РМ)",
+                  "entitlement_type": "Полномочия",
+                  "justification_text": "Концептуальная архитектура ФО Риск-сервисы КИБ - https://confluence.sberbank.ru/pages/viewpage.action?pageId=13969429481 1. UI Управление расписанием 2. UI Бизнес планирования 3. UI Рабочее место РМ Роль оформляется с целю исполнения распоряжения №16-03/75-Р от 24.03.2017 «процедуры мониторинга и управления качеством одобренного кредитного портфеля андеррайтеров подразделений экспертизы рисков малого бизнеса Межрегионального центра анализа и экспертизы рисков ПАО Сбербанк»"
+                },
+                {
+                  "system_id": 105,
+                  "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Стройка, МУР, СБАР, КИ и КЮЛ на всех сотрудников всех площадок (кроме ГРМ Москвы)  (№: P00053891)"
+                  ],
+                  "entitlement_id": 321,
+                  "inline_comment": null,
+                  "entitlement_name": "Рабочее_место_РКИБ_СиМ_Исполнитель задач",
+                  "entitlement_type": "Полномочия",
+                  "justification_text": "Концептуальная архитектура ФО Риск-сервисы КИБ - https://confluence.sberbank.ru/pages/viewpage.action?pageId=13969429481 1. UI Управление расписанием 2. UI Бизнес планирования 3. UI Рабочее место РМ Роль оформляется с целю исполнения распоряжения №16-03/75-Р от 24.03.2017 «процедуры мониторинга и управления качеством одобренного кредитного портфеля андеррайтеров подразделений экспертизы рисков малого бизнеса Межрегионального центра анализа и экспертизы рисков ПАО Сбербанк»"
+                }
+              ],
+              "request_accesses": [],
+              "support_recommendation": null
+            },
+            "context": {
+              "city": "Санкт-Петербург",
+              "system": {
+                "ci_code": "CI04206161",
+                "system_id": 105,
+                "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР"
+              },
+              "profile": null,
+              "position": "Риск-менеджер",
+              "department": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Санкт-Петербург",
+              "position": "Риск-менеджер",
+              "system_id": 105,
+              "department": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+              "profile_id": null,
+              "system_raw": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+              "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 23,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "instruction_offer",
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T09:00:56.986685+03:00"
+        },
+        {
+          "id": 3112,
+          "role": "USER",
+          "message_text": "Нет, спасибо",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:03:22.905277+03:00"
+        },
+        {
+          "id": 3113,
+          "role": "ASSISTANT",
+          "message_text": "Хорошо, продолжаем без инструкции. Если понадобится, напишите.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Санкт-Петербург",
+              "system": {
+                "ci_code": "CI04206161",
+                "system_id": 105,
+                "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР"
+              },
+              "profile": null,
+              "position": "Риск-менеджер",
+              "department": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Санкт-Петербург",
+              "position": "Риск-менеджер",
+              "system_id": 105,
+              "department": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+              "profile_id": null,
+              "system_raw": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР",
+              "system_name": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161] - ЕФС РР, ЭФИР"
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 24,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:03:28.339019+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "9a4a956c-9ad2-4d16-81f2-dea429176ec7",
+      "created_at": "2026-05-15T09:03:52.171653+03:00",
+      "updated_at": "2026-05-15T09:06:34.216698+03:00",
+      "current_intent_type": "ROLE_DISCOVERY",
+      "last_intent_type": "ROLE_DISCOVERY",
+      "active_goal": "ROLE_DISCOVERY",
+      "conversation_phase": "BROWSE_SYSTEMS",
+      "resolved_system_id": null,
+      "resolved_profile_id": null,
+      "rating": "UP",
+      "feedback_comment": null,
+      "feedback_created_at": "2026-05-15T09:06:34.216698+03:00",
+      "feedback_updated_at": "2026-05-15T09:06:34.216698+03:00",
+      "messages": [
+        {
+          "id": 3114,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T09:03:52.187902+03:00"
+        },
+        {
+          "id": 3115,
+          "role": "USER",
+          "message_text": "АС МУР",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:05:22.336855+03:00"
+        },
+        {
+          "id": 3116,
+          "role": "ASSISTANT",
+          "message_text": "Не нашел 'МУР' в справочнике АС, поэтому не записал это значение как АС.\n\nАС 'МУР' не найдена в справочнике. Уточните официальное или рабочее название АС.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": null
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 5,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "system",
+              "prompt": "АС 'МУР' не найдена в справочнике. Уточните официальное или рабочее название АС.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_SYSTEM_HINT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:05:26.115464+03:00"
+        },
+        {
+          "id": 3117,
+          "role": "USER",
+          "message_text": "Модуль управления расписанием",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:06:03.075254+03:00"
+        },
+        {
+          "id": 3118,
+          "role": "ASSISTANT",
+          "message_text": "Найдено несколько похожих АС. Подтвердите нужный вариант.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": null
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "system",
+              "prompt": "Найдено несколько похожих АС. Подтвердите нужный вариант.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "АС Управление моделями Cash Flow (АС CF) (И3) [CI00898671] - CF",
+                  "payload": {
+                    "system_id": 97,
+                    "system_name": "АС Управление моделями Cash Flow (АС CF) (И3) [CI00898671] - CF"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "АС ППРБ Управление резервами (И2) [CI01742026]",
+                  "payload": {
+                    "system_id": 94,
+                    "system_name": "АС ППРБ Управление резервами (И2) [CI01742026]"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "АС Управление залоговым обеспечением (Залоги) (И2) [CI00455116] - Залоги",
+                  "payload": {
+                    "system_id": 96,
+                    "system_name": "АС Управление залоговым обеспечением (Залоги) (И2) [CI00455116] - Залоги"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "АС Управление возвратом задолженности ЦА (И2) [CI00533767] - УВЗ",
+                  "payload": {
+                    "system_id": 95,
+                    "system_name": "АС Управление возвратом задолженности ЦА (И2) [CI00533767] - УВЗ"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "АС Zeus: Оперативное хранилище данных для управления лимитами на финансовых рынках CIB (И2) [CI01530064]",
+                  "payload": {
+                    "system_id": 114,
+                    "system_name": "АС Zeus: Оперативное хранилище данных для управления лимитами на финансовых рынках CIB (И2) [CI01530064]"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 9,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "candidate_selection",
+              "topic": "system",
+              "prompt": "Найдено несколько похожих АС. Подтвердите нужный вариант.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "АС Управление моделями Cash Flow (АС CF) (И3) [CI00898671] - CF",
+                  "payload": {
+                    "system_id": 97,
+                    "system_name": "АС Управление моделями Cash Flow (АС CF) (И3) [CI00898671] - CF"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "АС ППРБ Управление резервами (И2) [CI01742026]",
+                  "payload": {
+                    "system_id": 94,
+                    "system_name": "АС ППРБ Управление резервами (И2) [CI01742026]"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "АС Управление залоговым обеспечением (Залоги) (И2) [CI00455116] - Залоги",
+                  "payload": {
+                    "system_id": 96,
+                    "system_name": "АС Управление залоговым обеспечением (Залоги) (И2) [CI00455116] - Залоги"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "АС Управление возвратом задолженности ЦА (И2) [CI00533767] - УВЗ",
+                  "payload": {
+                    "system_id": 95,
+                    "system_name": "АС Управление возвратом задолженности ЦА (И2) [CI00533767] - УВЗ"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "АС Zeus: Оперативное хранилище данных для управления лимитами на финансовых рынках CIB (И2) [CI01530064]",
+                  "payload": {
+                    "system_id": 114,
+                    "system_name": "АС Zeus: Оперативное хранилище данных для управления лимитами на финансовых рынках CIB (И2) [CI01530064]"
+                  }
+                }
+              ],
+              "has_more": false,
+              "page_size": 5,
+              "page_offset": 0,
+              "total_options": 5,
+              "candidate_set_id": 349
+            },
+            "suggested_actions": [
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "BROWSE_SYSTEMS",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T09:06:07.084687+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "be957639-ae5e-4471-8671-834fe769a39e",
+      "created_at": "2026-05-15T09:06:35.748470+03:00",
+      "updated_at": "2026-05-15T09:21:11.680426+03:00",
+      "current_intent_type": "ROLE_DISCOVERY",
+      "last_intent_type": "ROLE_DISCOVERY",
+      "active_goal": "ROLE_DISCOVERY",
+      "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+      "resolved_system_id": 89,
+      "resolved_profile_id": null,
+      "rating": "DOWN",
+      "feedback_comment": "Переспросил про АС, хотя сразу ее верно определил. Не нашёл отдел по сокращению ФИ. Возможно нужно было написать отдел ФИ",
+      "feedback_created_at": "2026-05-15T09:21:11.680426+03:00",
+      "feedback_updated_at": "2026-05-15T09:21:11.680426+03:00",
+      "messages": [
+        {
+          "id": 3119,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T09:06:35.765601+03:00"
+        },
+        {
+          "id": 3120,
+          "role": "USER",
+          "message_text": "Аск",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:11:57.219917+03:00"
+        },
+        {
+          "id": 3121,
+          "role": "ASSISTANT",
+          "message_text": "Нужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": 89,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 4,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:12:02.052470+03:00"
+        },
+        {
+          "id": 3122,
+          "role": "USER",
+          "message_text": "Роль руководителя",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:12:50.940170+03:00"
+        },
+        {
+          "id": 3123,
+          "role": "ASSISTANT",
+          "message_text": "Нужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": 89,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 6,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:12:55.978393+03:00"
+        },
+        {
+          "id": 3124,
+          "role": "USER",
+          "message_text": "Анализ состояния клиента",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:14:01.671419+03:00"
+        },
+        {
+          "id": 3125,
+          "role": "ASSISTANT",
+          "message_text": "Переключаюсь на другую АС. Сохранил должность, город и отдел.\n\nУкажите вашу должность по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": 89,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "CHANGE_SYSTEM_FOCUS",
+            "state_revision": 11,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "position",
+              "prompt": "Укажите вашу должность по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_POSITION",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:14:07.338617+03:00"
+        },
+        {
+          "id": 3126,
+          "role": "USER",
+          "message_text": "Отраслевой Риск-менеджер",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:15:05.653331+03:00"
+        },
+        {
+          "id": 3127,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш город по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Отраслевой риск-менеджер",
+              "system_id": 89,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 16,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "city",
+              "prompt": "Укажите ваш город по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_CITY",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:15:18.321264+03:00"
+        },
+        {
+          "id": 3128,
+          "role": "USER",
+          "message_text": "Москва",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:16:41.484219+03:00"
+        },
+        {
+          "id": 3129,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш отдел или подразделение.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Отраслевой риск-менеджер",
+              "system_id": 89,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 21,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "department",
+              "prompt": "Укажите ваш отдел или подразделение.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:16:50.318765+03:00"
+        },
+        {
+          "id": 3130,
+          "role": "USER",
+          "message_text": "ФИ",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:17:18.860457+03:00"
+        },
+        {
+          "id": 3131,
+          "role": "ASSISTANT",
+          "message_text": "Не нашел 'ФИ' в справочнике для поля 'отдел', поэтому не записал это значение в контекст.\n\nУкажите ваш отдел или подразделение.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Отраслевой риск-менеджер",
+              "system_id": 89,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 24,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "department",
+              "prompt": "Укажите ваш отдел или подразделение.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:17:32.045457+03:00"
+        },
+        {
+          "id": 3132,
+          "role": "USER",
+          "message_text": "Отдел финансовых институтов",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:17:58.929650+03:00"
+        },
+        {
+          "id": 3133,
+          "role": "ASSISTANT",
+          "message_text": "Для вас, на основании должности Отраслевой риск-менеджер, города Москва и отдела Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ, для АС АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК найдено несколько контуров доступа, список ролей объединен.\nПо умолчанию доступны следующие роли: Роли: Роль сотрудника подразделения риск менеджеров с доступом к клиентам санкционного списка.\nПо требованию доступны следующие роли: Роли: Роль руководителя подразделения риск менеджеров с доступом к клиентам санкционного списка; Роли: Руководитель подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка; Роли: Сотрудник подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+          "structured_payload": {
+            "answer": {
+              "profile": null,
+              "systems": [],
+              "citations": [],
+              "answer_type": "ROLE_DISCOVERY",
+              "instruction": null,
+              "summary_text": "Для вас, на основании должности Отраслевой риск-менеджер, города Москва и отдела Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ, для АС АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК найдено несколько контуров доступа, список ролей объединен.\nПо умолчанию доступны следующие роли: Роли: Роль сотрудника подразделения риск менеджеров с доступом к клиентам санкционного списка.\nПо требованию доступны следующие роли: Роли: Роль руководителя подразделения риск менеджеров с доступом к клиентам санкционного списка; Роли: Руководитель подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка; Роли: Сотрудник подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+              "justification": null,
+              "default_accesses": [
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Отраслевой Риск-менеджер ОЭКРКК ФИ Москва (№: P00017430)"
+                  ],
+                  "entitlement_id": 273,
+                  "inline_comment": null,
+                  "entitlement_name": "Роль сотрудника подразделения риск менеджеров с доступом к клиентам санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021"
+                }
+              ],
+              "request_accesses": [
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 2,
+                  "profile_names": [
+                    "АСКна всех ОРГ,ГРМ всех площадок (кроме ИД и НЦ Москва) (№: P00053601)"
+                  ],
+                  "entitlement_id": 271,
+                  "inline_comment": null,
+                  "entitlement_name": "Роль руководителя подразделения риск менеджеров с доступом к клиентам санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021. Замещение по выполнению функционала руководителя"
+                },
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 2,
+                  "profile_names": [
+                    "АСК на всех ОРГ,ГРМ всех площадок (кроме ИД и НЦ Москва) (копия P00053601 от 2025.09.17 13:23:42) (№: P00053602)"
+                  ],
+                  "entitlement_id": 272,
+                  "inline_comment": null,
+                  "entitlement_name": "Руководитель подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021. Замещение по выполнению функционала руководителя"
+                },
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 2,
+                  "profile_names": [
+                    "Доп роль АСК - сотрудник ОПК и санкц. списки (№: P00037311)"
+                  ],
+                  "entitlement_id": 274,
+                  "inline_comment": null,
+                  "entitlement_name": "Сотрудник подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021"
+                }
+              ],
+              "support_recommendation": null
+            },
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ",
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Отраслевой риск-менеджер",
+              "system_id": 89,
+              "department": "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ",
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 31,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "instruction_offer",
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T09:18:20.830963+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "8fd1611f-722d-4876-a4a9-c9a78f834fc6",
+      "created_at": "2026-05-15T09:21:14.564792+03:00",
+      "updated_at": "2026-05-15T09:25:24.320166+03:00",
+      "current_intent_type": "ROLE_DISCOVERY",
+      "last_intent_type": "ROLE_DISCOVERY",
+      "active_goal": "ROLE_DISCOVERY",
+      "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+      "resolved_system_id": 89,
+      "resolved_profile_id": null,
+      "rating": "DOWN",
+      "feedback_comment": "Не нашёл отдел по сокращённому названию ФИ",
+      "feedback_created_at": "2026-05-15T09:25:24.320166+03:00",
+      "feedback_updated_at": "2026-05-15T09:25:24.320166+03:00",
+      "messages": [
+        {
+          "id": 3134,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T09:21:14.583562+03:00"
+        },
+        {
+          "id": 3135,
+          "role": "USER",
+          "message_text": "МОКК",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:21:54.307310+03:00"
+        },
+        {
+          "id": 3136,
+          "role": "ASSISTANT",
+          "message_text": "Укажите вашу должность по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_id_hint": 89
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 5,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "position",
+              "prompt": "Укажите вашу должность по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_POSITION",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:21:58.467342+03:00"
+        },
+        {
+          "id": 3137,
+          "role": "USER",
+          "message_text": "Отраслевой Риск-менеджер",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:22:21.537603+03:00"
+        },
+        {
+          "id": 3138,
+          "role": "ASSISTANT",
+          "message_text": "Введенное значение 'Отраслевой Риск-менеджмер' не найдено однозначно для должности. Выберите подходящий вариант из списка.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Отраслевой Риск-менеджмер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_id_hint": 89
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "position",
+              "prompt": "Введенное значение 'Отраслевой Риск-менеджмер' не найдено однозначно для должности. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Отраслевой риск-менеджер",
+                  "payload": {
+                    "value": "Отраслевой риск-менеджер"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Главный риск-менеджер",
+                  "payload": {
+                    "value": "Главный риск-менеджер"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Риск-менеджер",
+                  "payload": {
+                    "value": "Риск-менеджер"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Отраслевой директор-Начальник отдела",
+                  "payload": {
+                    "value": "Отраслевой директор-Начальник отдела"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "Менеджер направления",
+                  "payload": {
+                    "value": "Менеджер направления"
+                  }
+                },
+                {
+                  "id": "MORE",
+                  "label": "Показать еще варианты",
+                  "payload": {
+                    "action": "SHOW_MORE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 10,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "candidate_selection",
+              "topic": "position",
+              "prompt": "Введенное значение 'Отраслевой Риск-менеджмер' не найдено однозначно для должности. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Отраслевой риск-менеджер",
+                  "payload": {
+                    "value": "Отраслевой риск-менеджер"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Главный риск-менеджер",
+                  "payload": {
+                    "value": "Главный риск-менеджер"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Риск-менеджер",
+                  "payload": {
+                    "value": "Риск-менеджер"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Отраслевой директор-Начальник отдела",
+                  "payload": {
+                    "value": "Отраслевой директор-Начальник отдела"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "Менеджер направления",
+                  "payload": {
+                    "value": "Менеджер направления"
+                  }
+                }
+              ],
+              "has_more": true,
+              "page_size": 5,
+              "page_offset": 0,
+              "total_options": 8,
+              "candidate_set_id": 350
+            },
+            "suggested_actions": [
+              {
+                "id": "show_more",
+                "text": "Показать еще варианты",
+                "label": "Показать еще"
+              },
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_POSITION",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T09:22:33.927574+03:00"
+        },
+        {
+          "id": 3139,
+          "role": "USER",
+          "message_text": "Отраслевой риск-менеджер",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:22:47.142734+03:00"
+        },
+        {
+          "id": 3140,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш город по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Отраслевой риск-менеджер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_id_hint": 89
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 13,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "city",
+              "prompt": "Укажите ваш город по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_CITY",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:22:54.789017+03:00"
+        },
+        {
+          "id": 3141,
+          "role": "USER",
+          "message_text": "Москва",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:23:01.276799+03:00"
+        },
+        {
+          "id": 3142,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш отдел или подразделение.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": null,
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Отраслевой риск-менеджер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_id_hint": 89
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 18,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "department",
+              "prompt": "Укажите ваш отдел или подразделение.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:23:09.962483+03:00"
+        },
+        {
+          "id": 3143,
+          "role": "USER",
+          "message_text": "Отдел ФИ",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:23:17.975364+03:00"
+        },
+        {
+          "id": 3144,
+          "role": "ASSISTANT",
+          "message_text": "Не нашел 'ФИ' в справочнике для поля 'отдел', поэтому не записал это значение в контекст.\n\nУкажите ваш отдел или подразделение.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": null,
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Отраслевой риск-менеджер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_id_hint": 89
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 21,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "department",
+              "prompt": "Укажите ваш отдел или подразделение.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T09:23:30.364229+03:00"
+        },
+        {
+          "id": 3145,
+          "role": "USER",
+          "message_text": "Финансовые институты",
+          "structured_payload": null,
+          "created_at": "2026-05-15T09:24:01.762019+03:00"
+        },
+        {
+          "id": 3146,
+          "role": "ASSISTANT",
+          "message_text": "Для вас, на основании должности Отраслевой риск-менеджер, города Москва и отдела Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ, для АС АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК найдено несколько контуров доступа, список ролей объединен.\nПо умолчанию доступны следующие роли: Роли: Роль сотрудника подразделения риск менеджеров с доступом к клиентам санкционного списка.\nПо требованию доступны следующие роли: Роли: Роль руководителя подразделения риск менеджеров с доступом к клиентам санкционного списка; Роли: Руководитель подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка; Роли: Сотрудник подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+          "structured_payload": {
+            "answer": {
+              "profile": null,
+              "systems": [],
+              "citations": [],
+              "answer_type": "ROLE_DISCOVERY",
+              "instruction": null,
+              "summary_text": "Для вас, на основании должности Отраслевой риск-менеджер, города Москва и отдела Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ, для АС АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК найдено несколько контуров доступа, список ролей объединен.\nПо умолчанию доступны следующие роли: Роли: Роль сотрудника подразделения риск менеджеров с доступом к клиентам санкционного списка.\nПо требованию доступны следующие роли: Роли: Роль руководителя подразделения риск менеджеров с доступом к клиентам санкционного списка; Роли: Руководитель подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка; Роли: Сотрудник подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+              "justification": null,
+              "default_accesses": [
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Отраслевой Риск-менеджер ОЭКРКК ФИ Москва (№: P00017430)"
+                  ],
+                  "entitlement_id": 273,
+                  "inline_comment": null,
+                  "entitlement_name": "Роль сотрудника подразделения риск менеджеров с доступом к клиентам санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021"
+                }
+              ],
+              "request_accesses": [
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 2,
+                  "profile_names": [
+                    "АСКна всех ОРГ,ГРМ всех площадок (кроме ИД и НЦ Москва) (№: P00053601)"
+                  ],
+                  "entitlement_id": 271,
+                  "inline_comment": null,
+                  "entitlement_name": "Роль руководителя подразделения риск менеджеров с доступом к клиентам санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021. Замещение по выполнению функционала руководителя"
+                },
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 2,
+                  "profile_names": [
+                    "АСК на всех ОРГ,ГРМ всех площадок (кроме ИД и НЦ Москва) (копия P00053601 от 2025.09.17 13:23:42) (№: P00053602)"
+                  ],
+                  "entitlement_id": 272,
+                  "inline_comment": null,
+                  "entitlement_name": "Руководитель подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021. Замещение по выполнению функционала руководителя"
+                },
+                {
+                  "system_id": 89,
+                  "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+                  "access_level": 2,
+                  "profile_names": [
+                    "Доп роль АСК - сотрудник ОПК и санкц. списки (№: P00037311)"
+                  ],
+                  "entitlement_id": 274,
+                  "inline_comment": null,
+                  "entitlement_name": "Сотрудник подразделения риск менеджеров с доступом к клиентам ОПК и санкционного списка",
+                  "entitlement_type": "Роли",
+                  "justification_text": "Проведение оценки финансового положения контрагентов согласно решению КПКИ №1288пар.54 от 31.03.2021"
+                }
+              ],
+              "support_recommendation": null
+            },
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI02319693",
+                "system_id": 89,
+                "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+              },
+              "profile": null,
+              "position": "Отраслевой риск-менеджер",
+              "department": "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ",
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Отраслевой риск-менеджер",
+              "system_id": 89,
+              "department": "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ",
+              "profile_id": null,
+              "system_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК",
+              "system_name": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693] - АСК, МОКК"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 29,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "instruction_offer",
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T09:24:27.542868+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "abd64897-bef6-4430-9673-9dcfaf9d28f4",
+      "created_at": "2026-05-15T14:19:21.975649+03:00",
+      "updated_at": "2026-05-15T14:26:26.251613+03:00",
+      "current_intent_type": "UNKNOWN",
+      "last_intent_type": "UNKNOWN",
+      "active_goal": "UNKNOWN",
+      "conversation_phase": null,
+      "resolved_system_id": 107,
+      "resolved_profile_id": null,
+      "rating": "DOWN",
+      "feedback_comment": "Несколько раз спрашивает одно и тоже, хотя вижу, что записал АС и должность верно. Не вижу смысла продолжать диалог",
+      "feedback_created_at": "2026-05-15T14:26:26.251613+03:00",
+      "feedback_updated_at": "2026-05-15T14:26:26.251613+03:00",
+      "messages": [
+        {
+          "id": 3147,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T14:19:21.998863+03:00"
+        },
+        {
+          "id": 3148,
+          "role": "USER",
+          "message_text": "Пуаро",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:22:13.316165+03:00"
+        },
+        {
+          "id": 3149,
+          "role": "ASSISTANT",
+          "message_text": "Нужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI03345728",
+                "system_id": 107,
+                "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+              },
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": 107,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 4,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:22:18.229887+03:00"
+        },
+        {
+          "id": 3150,
+          "role": "USER",
+          "message_text": "АС Пуаро",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:23:08.173390+03:00"
+        },
+        {
+          "id": 3151,
+          "role": "ASSISTANT",
+          "message_text": "Переключаюсь на другую АС. Сохранил должность, город и отдел.\n\nНужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_id_hint": 107
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "CHANGE_SYSTEM_FOCUS",
+            "state_revision": 8,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:23:12.363670+03:00"
+        },
+        {
+          "id": 3152,
+          "role": "USER",
+          "message_text": "АС Пуаро 2.0",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:24:18.097406+03:00"
+        },
+        {
+          "id": 3153,
+          "role": "ASSISTANT",
+          "message_text": "Переключаюсь на другую АС. Сохранил должность, город и отдел.\n\nНужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI03345728",
+                "system_id": 107,
+                "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+              },
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": 107,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+            },
+            "dialog_act": "SELECT_OPTION",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "CHANGE_SYSTEM_FOCUS",
+            "state_revision": 12,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:24:22.167320+03:00"
+        },
+        {
+          "id": 3154,
+          "role": "USER",
+          "message_text": "Менеджер",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:24:46.310569+03:00"
+        },
+        {
+          "id": 3155,
+          "role": "ASSISTANT",
+          "message_text": "Нужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI03345728",
+                "system_id": 107,
+                "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+              },
+              "profile": null,
+              "position": "Менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Менеджер",
+              "system_id": 107,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 16,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:24:54.725875+03:00"
+        },
+        {
+          "id": 3156,
+          "role": "USER",
+          "message_text": "Пуаро 2.0",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:25:16.354810+03:00"
+        },
+        {
+          "id": 3157,
+          "role": "ASSISTANT",
+          "message_text": "Переключаюсь на другую АС. Сохранил должность, город и отдел.\n\nНужна конкретизация. Укажите, пожалуйста, о какой АС, роли или инструкции идет речь.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": {
+                "ci_code": "CI03345728",
+                "system_id": 107,
+                "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+              },
+              "profile": null,
+              "position": "Менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Менеджер",
+              "system_id": 107,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+            },
+            "dialog_act": "CHANGE_SYSTEM",
+            "active_goal": "UNKNOWN",
+            "intent_type": "UNKNOWN",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "CHANGE_SYSTEM_FOCUS",
+            "state_revision": 19,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": null,
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:25:20.577092+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "51f062c8-45a1-42ba-83b5-477307483895",
+      "created_at": "2026-05-15T14:26:27.775051+03:00",
+      "updated_at": "2026-05-15T14:30:00.718690+03:00",
+      "current_intent_type": "ROLE_DISCOVERY",
+      "last_intent_type": "ROLE_DISCOVERY",
+      "active_goal": "ROLE_DISCOVERY",
+      "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+      "resolved_system_id": 107,
+      "resolved_profile_id": null,
+      "rating": "UP",
+      "feedback_comment": null,
+      "feedback_created_at": "2026-05-15T14:30:00.718690+03:00",
+      "feedback_updated_at": "2026-05-15T14:30:00.718690+03:00",
+      "messages": [
+        {
+          "id": 3158,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T14:26:27.791339+03:00"
+        },
+        {
+          "id": 3159,
+          "role": "USER",
+          "message_text": "АС Пуаро",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:26:35.800039+03:00"
+        },
+        {
+          "id": 3160,
+          "role": "ASSISTANT",
+          "message_text": "Укажите вашу должность по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": null,
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_id_hint": 107
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 5,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "position",
+              "prompt": "Укажите вашу должность по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_POSITION",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:26:41.227984+03:00"
+        },
+        {
+          "id": 3161,
+          "role": "USER",
+          "message_text": "Менеджер",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:27:20.773766+03:00"
+        },
+        {
+          "id": 3162,
+          "role": "ASSISTANT",
+          "message_text": "Введенное значение 'Менеджер' не найдено однозначно для должности. Выберите подходящий вариант из списка.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": null,
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Менеджер",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_id_hint": 107
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "position",
+              "prompt": "Введенное значение 'Менеджер' не найдено однозначно для должности. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Главный риск-менеджер",
+                  "payload": {
+                    "value": "Главный риск-менеджер"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Отраслевой риск-менеджер",
+                  "payload": {
+                    "value": "Отраслевой риск-менеджер"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Менеджер направления",
+                  "payload": {
+                    "value": "Менеджер направления"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Риск-менеджер",
+                  "payload": {
+                    "value": "Риск-менеджер"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 10,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "candidate_selection",
+              "topic": "position",
+              "prompt": "Введенное значение 'Менеджер' не найдено однозначно для должности. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Главный риск-менеджер",
+                  "payload": {
+                    "value": "Главный риск-менеджер"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Отраслевой риск-менеджер",
+                  "payload": {
+                    "value": "Отраслевой риск-менеджер"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Менеджер направления",
+                  "payload": {
+                    "value": "Менеджер направления"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Риск-менеджер",
+                  "payload": {
+                    "value": "Риск-менеджер"
+                  }
+                }
+              ],
+              "has_more": false,
+              "page_size": 5,
+              "page_offset": 0,
+              "total_options": 4,
+              "candidate_set_id": 351
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_POSITION",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T14:27:34.414403+03:00"
+        },
+        {
+          "id": 3163,
+          "role": "USER",
+          "message_text": "Менеджер направления",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:27:45.567110+03:00"
+        },
+        {
+          "id": 3164,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш город по штатной структуре.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": null,
+              "system": null,
+              "profile": null,
+              "position": "Менеджер направления",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": null,
+              "position": "Менеджер направления",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_id_hint": 107
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 13,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "city",
+              "prompt": "Укажите ваш город по штатной структуре.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_CITY",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:27:57.106168+03:00"
+        },
+        {
+          "id": 3165,
+          "role": "USER",
+          "message_text": "Москва",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:28:26.849353+03:00"
+        },
+        {
+          "id": 3166,
+          "role": "ASSISTANT",
+          "message_text": "Укажите ваш отдел или подразделение.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": null,
+              "profile": null,
+              "position": "Менеджер направления",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Менеджер направления",
+              "system_id": null,
+              "department": null,
+              "profile_id": null,
+              "system_raw": "Пуаро",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_id_hint": 107
+            },
+            "dialog_act": "PROVIDE_SLOT",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 18,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "slot_request",
+              "topic": "department",
+              "prompt": "Укажите ваш отдел или подразделение.",
+              "options": [],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:28:39.218385+03:00"
+        },
+        {
+          "id": 3167,
+          "role": "USER",
+          "message_text": "ЦЭКРКЮЛ",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:28:46.874856+03:00"
+        },
+        {
+          "id": 3168,
+          "role": "ASSISTANT",
+          "message_text": "Введенное значение 'ЦЭКРКЮЛ' не найдено однозначно для отдела. Выберите подходящий вариант из списка.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": null,
+              "profile": null,
+              "position": "Менеджер направления",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Менеджер направления",
+              "system_id": null,
+              "department": "ЦЭКРКЮЛ",
+              "profile_id": null,
+              "system_raw": "Пуаро",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_id_hint": 107
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "department",
+              "prompt": "Введенное значение 'ЦЭКРКЮЛ' не найдено однозначно для отдела. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Новосибирск (10326005); - УЭКРКЮЛ_НСК",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Новосибирск (10326005); - УЭКРКЮЛ_НСК"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Самара (10326016); - УЭКРКЮЛ_СМР",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Самара (10326016); - УЭКРКЮЛ_СМР"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Санкт- Петербург (10326178); - УЭКРКЮЛ_СПб",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Санкт- Петербург (10326178); - УЭКРКЮЛ_СПб"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ",
+                  "payload": {
+                    "value": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Екатеринбург (10371751); - УЭКРКЮЛ_ЕКТ",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Екатеринбург (10371751); - УЭКРКЮЛ_ЕКТ"
+                  }
+                },
+                {
+                  "id": "MORE",
+                  "label": "Показать еще варианты",
+                  "payload": {
+                    "action": "SHOW_MORE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 23,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "candidate_selection",
+              "topic": "department",
+              "prompt": "Введенное значение 'ЦЭКРКЮЛ' не найдено однозначно для отдела. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Новосибирск (10326005); - УЭКРКЮЛ_НСК",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Новосибирск (10326005); - УЭКРКЮЛ_НСК"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Самара (10326016); - УЭКРКЮЛ_СМР",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Самара (10326016); - УЭКРКЮЛ_СМР"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Санкт- Петербург (10326178); - УЭКРКЮЛ_СПб",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Санкт- Петербург (10326178); - УЭКРКЮЛ_СПб"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ",
+                  "payload": {
+                    "value": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Екатеринбург (10371751); - УЭКРКЮЛ_ЕКТ",
+                  "payload": {
+                    "value": "Управление экспертизы кредитных рисков клиентов юридических лиц г.Екатеринбург (10371751); - УЭКРКЮЛ_ЕКТ"
+                  }
+                }
+              ],
+              "has_more": true,
+              "page_size": 5,
+              "page_offset": 0,
+              "total_options": 6,
+              "candidate_set_id": 352
+            },
+            "suggested_actions": [
+              {
+                "id": "show_more",
+                "text": "Показать еще варианты",
+                "label": "Показать еще"
+              },
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T14:29:07.503563+03:00"
+        },
+        {
+          "id": 3169,
+          "role": "USER",
+          "message_text": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:29:26.299148+03:00"
+        },
+        {
+          "id": 3170,
+          "role": "ASSISTANT",
+          "message_text": "По подтвержденному контексту (АС, должность, город, отдел) доступы не найдены. Проверьте корректность отдела и должности по штатной структуре.",
+          "structured_payload": {
+            "answer": {
+              "profile": null,
+              "systems": [],
+              "citations": [],
+              "answer_type": "ROLE_DISCOVERY",
+              "instruction": null,
+              "summary_text": "По подтвержденному контексту (АС, должность, город, отдел) доступы не найдены. Проверьте корректность отдела и должности по штатной структуре.",
+              "justification": null,
+              "default_accesses": [],
+              "request_accesses": [],
+              "support_recommendation": null
+            },
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI03345728",
+                "system_id": 107,
+                "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+              },
+              "profile": null,
+              "position": "Менеджер направления",
+              "department": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ",
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Менеджер направления",
+              "system_id": 107,
+              "department": "Центр экспертизы кредитных рисков клиентов юридических лиц (10331727); - ЦЭКРКЮЛ",
+              "profile_id": null,
+              "system_raw": "Пуаро 2.0 (И2) [CI03345728]",
+              "system_name": "Пуаро 2.0 (И2) [CI03345728]"
+            },
+            "dialog_act": "SELECT_OPTION",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": null,
+            "resume_phase": null,
+            "context_shift": "NONE",
+            "state_revision": 28,
+            "instruction_mode": null,
+            "pending_question": null,
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+            "requires_confirmation": false
+          },
+          "created_at": "2026-05-15T14:29:51.069032+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "ff649065-acb6-4a7a-81d2-a7067ae13758",
+      "created_at": "2026-05-15T14:30:02.437273+03:00",
+      "updated_at": "2026-05-15T14:40:18.971390+03:00",
+      "current_intent_type": "ROLE_DISCOVERY",
+      "last_intent_type": "ROLE_DISCOVERY",
+      "active_goal": "ROLE_DISCOVERY",
+      "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+      "resolved_system_id": 106,
+      "resolved_profile_id": null,
+      "rating": "UP",
+      "feedback_comment": null,
+      "feedback_created_at": "2026-05-15T14:40:18.971390+03:00",
+      "feedback_updated_at": "2026-05-15T14:40:18.971390+03:00",
+      "messages": [
+        {
+          "id": 3171,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T14:30:02.455542+03:00"
+        },
+        {
+          "id": 3172,
+          "role": "USER",
+          "message_text": "Кредитные риски, Риск-менеджер, Москва",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:30:28.419053+03:00"
+        },
+        {
+          "id": 3173,
+          "role": "ASSISTANT",
+          "message_text": "Удалось определить: АС = Кредитные риски КИБ (И2) [CI00767391], должность = Риск-менеджер, город = Москва, отдел = Кредитные риски.\n\nВведенное значение 'Кредитные риски' не найдено однозначно для отдела. Выберите подходящий вариант из списка.",
+          "structured_payload": {
+            "answer": null,
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI00767391",
+                "system_id": 106,
+                "system_name": "Кредитные риски КИБ (И2) [CI00767391]"
+              },
+              "profile": null,
+              "position": "Риск-менеджер",
+              "department": null,
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Риск-менеджер",
+              "system_id": 106,
+              "department": "Кредитные риски",
+              "profile_id": null,
+              "system_raw": "Кредитные риски КИБ (И2) [CI00767391]",
+              "system_name": "Кредитные риски КИБ (И2) [CI00767391]"
+            },
+            "dialog_act": "ASK_HELP",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "department",
+              "prompt": "Введенное значение 'Кредитные риски' не найдено однозначно для отдела. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №1",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №1"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №10",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №10"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №11",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №11"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №2",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №2"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №3"
+                  }
+                },
+                {
+                  "id": "MORE",
+                  "label": "Показать еще варианты",
+                  "payload": {
+                    "action": "SHOW_MORE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "SWITCH_GOAL",
+            "state_revision": 8,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "candidate_selection",
+              "topic": "department",
+              "prompt": "Введенное значение 'Кредитные риски' не найдено однозначно для отдела. Выберите подходящий вариант из списка.",
+              "options": [
+                {
+                  "id": "1",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №1",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №1"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №10",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №10"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №11",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №11"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №2",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №2"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+                  "payload": {
+                    "value": "Отдел экспертизы кредитных рисков корпоративных клиентов №3"
+                  }
+                }
+              ],
+              "has_more": true,
+              "page_size": 5,
+              "page_offset": 0,
+              "total_options": 8,
+              "candidate_set_id": 353
+            },
+            "suggested_actions": [
+              {
+                "id": "show_more",
+                "text": "Показать еще варианты",
+                "label": "Показать еще"
+              },
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "COLLECT_DEPARTMENT",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T14:31:14.326224+03:00"
+        },
+        {
+          "id": 3174,
+          "role": "USER",
+          "message_text": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+          "structured_payload": null,
+          "created_at": "2026-05-15T14:34:30.981823+03:00"
+        },
+        {
+          "id": 3175,
+          "role": "ASSISTANT",
+          "message_text": "Для вас, на основании должности Риск-менеджер, города Москва и отдела Отдел экспертизы кредитных рисков корпоративных клиентов №3, для АС Кредитные риски КИБ (И2) [CI00767391] найдено несколько контуров доступа, список ролей объединен.\nПо умолчанию доступны следующие роли: Модуль: Астрея; Модуль: Дефолтная реструктуризация; Роли Астрея: Астрея ПРМ Риск-менеджер; Роли Дефолтная реструктуризация: DefRestr Риск-менеджер.\nПо требованию доступны следующие роли: нет.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+          "structured_payload": {
+            "answer": {
+              "profile": null,
+              "systems": [],
+              "citations": [],
+              "answer_type": "ROLE_DISCOVERY",
+              "instruction": null,
+              "summary_text": "Для вас, на основании должности Риск-менеджер, города Москва и отдела Отдел экспертизы кредитных рисков корпоративных клиентов №3, для АС Кредитные риски КИБ (И2) [CI00767391] найдено несколько контуров доступа, список ролей объединен.\nПо умолчанию доступны следующие роли: Модуль: Астрея; Модуль: Дефолтная реструктуризация; Роли Астрея: Астрея ПРМ Риск-менеджер; Роли Дефолтная реструктуризация: DefRestr Риск-менеджер.\nПо требованию доступны следующие роли: нет.\nЕсли хотите, подскажу, как проверить или запросить доступ к этой или другим АС.",
+              "justification": null,
+              "default_accesses": [
+                {
+                  "system_id": 106,
+                  "system_name": "Кредитные риски КИБ (И2) [CI00767391]",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Риск-менеджер ОЭКРКК Москва (№: P00017395)"
+                  ],
+                  "entitlement_id": 323,
+                  "inline_comment": null,
+                  "entitlement_name": "Астрея",
+                  "entitlement_type": "Модуль",
+                  "justification_text": "Данный доступ у сотрудников, которые занимаются мониторингом сделок по НКП в соответствии с ТС 2929-5 п.1.7, 1.7.1, 1.7.2, п.25"
+                },
+                {
+                  "system_id": 106,
+                  "system_name": "Кредитные риски КИБ (И2) [CI00767391]",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Общие доступы на всех кроме ГРМ Москва и ПЛ (№: P00036786)"
+                  ],
+                  "entitlement_id": 324,
+                  "inline_comment": null,
+                  "entitlement_name": "Дефолтная реструктуризация",
+                  "entitlement_type": "Модуль",
+                  "justification_text": "Добавление роли риск-менеджер в модуль Дефолтная реструктуризация осуществить в соответствии с ссылкой на Приложение 6 ТС 5106 Дефолтная реструктуризация."
+                },
+                {
+                  "system_id": 106,
+                  "system_name": "Кредитные риски КИБ (И2) [CI00767391]",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Риск-менеджер ОЭКРКК Москва (№: P00017395)"
+                  ],
+                  "entitlement_id": 325,
+                  "inline_comment": null,
+                  "entitlement_name": "Астрея ПРМ Риск-менеджер",
+                  "entitlement_type": "Роли Астрея",
+                  "justification_text": "Данный доступ у сотрудников, которые занимаются мониторингом сделок по НКП в соответствии с ТС 2929-5 п.1.7, 1.7.1, 1.7.2, п.25"
+                },
+                {
+                  "system_id": 106,
+                  "system_name": "Кредитные риски КИБ (И2) [CI00767391]",
+                  "access_level": 1,
+                  "profile_names": [
+                    "Общие доступы на всех кроме ГРМ Москва и ПЛ (№: P00036786)"
+                  ],
+                  "entitlement_id": 326,
+                  "inline_comment": null,
+                  "entitlement_name": "DefRestr Риск-менеджер",
+                  "entitlement_type": "Роли Дефолтная реструктуризация",
+                  "justification_text": "Добавление роли риск-менеджер в модуль Дефолтная реструктуризация осуществить в соответствии с ссылкой на Приложение 6 ТС 5106 Дефолтная реструктуризация."
+                }
+              ],
+              "request_accesses": [],
+              "support_recommendation": null
+            },
+            "context": {
+              "city": "Москва",
+              "system": {
+                "ci_code": "CI00767391",
+                "system_id": 106,
+                "system_name": "Кредитные риски КИБ (И2) [CI00767391]"
+              },
+              "profile": null,
+              "position": "Риск-менеджер",
+              "department": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+              "requested_role": null
+            },
+            "resolved": {
+              "city": "Москва",
+              "position": "Риск-менеджер",
+              "system_id": 106,
+              "department": "Отдел экспертизы кредитных рисков корпоративных клиентов №3",
+              "profile_id": null,
+              "system_raw": "Кредитные риски КИБ (И2) [CI00767391]",
+              "system_name": "Кредитные риски КИБ (И2) [CI00767391]"
+            },
+            "dialog_act": "SELECT_OPTION",
+            "active_goal": "ROLE_DISCOVERY",
+            "intent_type": "ROLE_DISCOVERY",
+            "resume_goal": null,
+            "confirmation": {
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ]
+            },
+            "resume_phase": null,
+            "context_shift": "SWITCH_GOAL",
+            "state_revision": 12,
+            "instruction_mode": null,
+            "pending_question": {
+              "kind": "instruction_offer",
+              "topic": "instruction",
+              "prompt": "Нужна инструкция, как проверить или запросить доступ?",
+              "options": [
+                {
+                  "id": "instruction_yes",
+                  "label": "Да, подскажи",
+                  "payload": {
+                    "action": "ACCEPT"
+                  }
+                },
+                {
+                  "id": "instruction_no",
+                  "label": "Нет, спасибо",
+                  "payload": {
+                    "action": "DECLINE"
+                  }
+                }
+              ],
+              "has_more": false,
+              "page_size": 0,
+              "page_offset": 0,
+              "total_options": 0,
+              "candidate_set_id": null
+            },
+            "suggested_actions": [
+              {
+                "id": "change_system",
+                "text": "Хочу выбрать другую АС",
+                "label": "Сменить АС"
+              },
+              {
+                "id": "reset_context",
+                "text": "Сбросить контекст",
+                "label": "Сбросить контекст"
+              }
+            ],
+            "conversation_phase": "ANSWER_ROLE_DISCOVERY",
+            "requires_confirmation": true
+          },
+          "created_at": "2026-05-15T14:34:47.441826+03:00"
+        }
+      ]
+    },
+    {
+      "session_id": "567c5014-e02f-4083-a9d6-fc9a6ace4a2d",
+      "created_at": "2026-05-15T21:39:39.793474+03:00",
+      "updated_at": "2026-05-15T21:39:39.817118+03:00",
+      "current_intent_type": null,
+      "last_intent_type": null,
+      "active_goal": null,
+      "conversation_phase": null,
+      "resolved_system_id": null,
+      "resolved_profile_id": null,
+      "rating": null,
+      "feedback_comment": null,
+      "feedback_created_at": null,
+      "feedback_updated_at": null,
+      "messages": [
+        {
+          "id": 3176,
+          "role": "ASSISTANT",
+          "message_text": "Опишите вопрос по доступу, роли или инструкции. Если вопрос про роли, лучше сразу указать АС, должность, город и отдел.",
+          "structured_payload": {
+            "type": "greeting"
+          },
+          "created_at": "2026-05-15T21:39:39.817118+03:00"
+        }
+      ]
+    }
+  ]
+}

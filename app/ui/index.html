@@ -356,15 +356,21 @@
         flex-wrap: wrap;
       }
 
-      .feedback-status {
+      .feedback-status,
+      .upload-status {
         min-height: 18px;
         margin-top: 8px;
         font-size: 12px;
         color: var(--ink-faint);
       }
 
-      .feedback-status.error {
+      .feedback-status.error,
+      .upload-status.error {
         color: #b93a3a;
+      }
+
+      .upload-status.success {
+        color: #1f7a4d;
       }
 
       .feedback-save {
@@ -952,9 +958,12 @@
                     <button class="feedback-button" id="feedback-down" type="button" title="Оценить сессию отрицательно" aria-label="Палец вниз" disabled>👎</button>
                   </div>
                 </div>
+                <button class="ghost-button" id="upload-model" type="button">Загрузить файл</button>
+                <input id="upload-model-input" type="file" accept=".xlsx" hidden>
                 <button class="ghost-button" id="new-chat" type="button">Новый чат</button>
               </div>
             </div>
+            <div class="upload-status" id="upload-status" aria-live="polite"></div>
             <div class="feedback-panel" id="feedback-panel" hidden>
               <label class="feedback-label" for="feedback-comment">Если ожидали другое поведение, опишите его здесь.</label>
               <textarea
@@ -1031,6 +1040,9 @@
       const inputEl = document.getElementById("input");
       const sendEl = document.getElementById("send");
       const newChatEl = document.getElementById("new-chat");
+      const uploadModelEl = document.getElementById("upload-model");
+      const uploadModelInputEl = document.getElementById("upload-model-input");
+      const uploadStatusEl = document.getElementById("upload-status");
       const sessionBadgeEl = document.getElementById("session-badge");
       const contextChipsEl = document.getElementById("context-chips");
       const contextTrayEl = document.querySelector(".context-tray");
@@ -1085,6 +1097,7 @@
         inputEl.disabled = nextState;
         inputEl.setAttribute("aria-busy", String(nextState));
         newChatEl.disabled = nextState;
+        uploadModelEl.disabled = nextState;
         feedbackUpEl.disabled = nextState || !sessionId;
         feedbackDownEl.disabled = nextState || !sessionId;
         feedbackSaveEl.disabled = nextState || !sessionId;
@@ -1136,6 +1149,12 @@
       function setFeedbackStatus(text, isError = false) {
         feedbackStatusEl.textContent = text || "";
         feedbackStatusEl.classList.toggle("error", Boolean(isError));
+      }
+
+      function setUploadStatus(text, status = "info") {
+        uploadStatusEl.textContent = text || "";
+        uploadStatusEl.classList.toggle("error", status === "error");
+        uploadStatusEl.classList.toggle("success", status === "success");
       }
 
       function setFeedbackPanelVisible(nextVisible) {
@@ -1675,6 +1694,81 @@
         }
       }
 
+      function buildUploadSummary(payload) {
+        const validate = payload && payload.validate ? payload.validate : {};
+        const load = payload && payload.load ? payload.load : {};
+        const lines = [];
+        if (payload.status === "SUCCESS") {
+          lines.push("Файл проверен и загружен.");
+          lines.push(
+            `Профили: ${load.profiles ?? validate.profiles ?? "0"}, АС: ${load.systems ?? validate.systems ?? "0"}, роли/доступы: ${load.entitlements ?? validate.entitlements ?? "0"}, записей доступа: ${load.rows_loaded ?? validate.accesses ?? "0"}.`
+          );
+        } else {
+          lines.push(payload.message || "Файл не загружен.");
+          if (validate.errors_count || validate.warnings_count) {
+            lines.push(`Ошибки: ${validate.errors_count || 0}, предупреждения: ${validate.warnings_count || 0}.`);
+          }
+          const issues = Array.isArray(validate.issues) ? validate.issues.slice(0, 5) : [];
+          issues.forEach((issue) => {
+            const place = [issue.sheet_name, issue.source_row ? `строка ${issue.source_row}` : null, issue.source_col ? `колонка ${issue.source_col}` : null]
+              .filter(Boolean)
+              .join(", ");
+            lines.push(`- ${issue.error_code || issue.severity}: ${issue.message || ""}${place ? ` (${place})` : ""}`);
+          });
+        }
+        if (payload.backup_path) {
+          lines.push(`Backup БД создан: ${payload.backup_path}`);
+        }
+        return lines.join("\n");
+      }
+
+      async function uploadRoleModelFile(file) {
+        if (!file || isSending) return;
+        if (!file.name.toLowerCase().endsWith(".xlsx")) {
+          setUploadStatus("Можно загрузить только файл .xlsx.", "error");
+          return;
+        }
+        setBusy(true);
+        setUploadStatus(`Загружаю и проверяю файл ${file.name}...`);
+        try {
+          const response = await fetchWithTimeout(apiUrl("/admin/rolemodel/upload"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "X-File-Name": encodeURIComponent(file.name)
+            },
+            body: file
+          }, 180000);
+          let payload = null;
+          try {
+            payload = await response.json();
+          } catch (error) {
+            payload = null;
+          }
+          if (!response.ok) {
+            const detail = payload && payload.detail ? payload.detail : `HTTP ${response.status}`;
+            throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+          }
+          const summary = buildUploadSummary(payload || {});
+          if (payload && payload.status === "SUCCESS") {
+            setUploadStatus("Файл успешно загружен. Новые данные активны.", "success");
+          } else {
+            setUploadStatus("Файл не загружен: проверьте сообщение в чате.", "error");
+          }
+          appendMessage("assistant", summary, null);
+        } catch (error) {
+          setUploadStatus("Не удалось загрузить файл.", "error");
+          appendMessage(
+            "assistant",
+            `Не удалось загрузить файл. ${error && error.message ? error.message : "Повторите попытку позже."}`,
+            null
+          );
+        } finally {
+          uploadModelInputEl.value = "";
+          setBusy(false);
+        }
+      }
+
       async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
         const controller = new AbortController();
         const timerId = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -1694,6 +1788,14 @@
       });
 
       newChatEl.addEventListener("click", () => createSession({ clearMessages: true }));
+      uploadModelEl.addEventListener("click", () => {
+        if (isSending) return;
+        uploadModelInputEl.click();
+      });
+      uploadModelInputEl.addEventListener("change", () => {
+        const file = uploadModelInputEl.files && uploadModelInputEl.files[0];
+        if (file) uploadRoleModelFile(file);
+      });
       feedbackUpEl.addEventListener("click", async () => {
         if (isSending) return;
         setFeedbackPanelVisible(false);
