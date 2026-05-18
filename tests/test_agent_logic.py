@@ -1006,6 +1006,81 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(state.get("position_raw"), "Андеррайтер")
         self.assertEqual(state.get("department_raw"), "Отдел экспертизы финансовых институтов")
 
+    def test_change_system_during_department_candidate_selection_clears_unconfirmed_department(self) -> None:
+        self.repo.systems[21] = {
+            "id": 21,
+            "system_name_raw": "АС Залоги (ПРОМ) (И2) [CI00000021]",
+            "ci_code": "[CI00000021]",
+        }
+        self.repo.systems[89] = {
+            "id": 89,
+            "system_name_raw": "АС ПКАП Анализ состояния клиента корпоративного бизнеса (АСК, МОКК) (И2) [CI02319693]",
+            "ci_code": "[CI02319693]",
+        }
+        self.repo.system_candidates_map["АСК"] = [
+            {
+                "system_id": 89,
+                "system_name_raw": self.repo.systems[89]["system_name_raw"],
+                "ci_code": "[CI02319693]",
+                "alias_text": "АСК",
+                "score": 1.0,
+                "alias_class": "SAFE",
+            }
+        ]
+        candidate_set = self.repo.create_candidate_set(
+            session_id="s1",
+            topic="department",
+            source_query="поменяй АС на АСК",
+            options=[
+                {
+                    "option_key": "1",
+                    "option_label": "Отдел Контроля качества",
+                    "option_payload": {"value": "Отдел Контроля качества"},
+                }
+            ],
+        )
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="ROLE_DISCOVERY",
+            last_intent_type="ROLE_DISCOVERY",
+            system_raw=self.repo.systems[21]["system_name_raw"],
+            resolved_system_id=21,
+            position_raw="Менеджер направления",
+            city_raw="Москва",
+            department_raw="поменяй АС на АСК",
+            pending_question={
+                "kind": "candidate_selection",
+                "topic": "department",
+                "prompt": "Выберите отдел",
+                "candidate_set_id": candidate_set.candidate_set_id,
+            },
+        )
+
+        def forced_change_system(*_args, **_kwargs):
+            return {
+                "dialog_act": "CHANGE_SYSTEM",
+                "intent_type": "ROLE_DISCOVERY",
+                "entities": {"system_raw": "АСК"},
+                "slot_candidates": {},
+                "confidence": 0.0,
+                "goal_transition": "STAY",
+                "context_shift": "NONE",
+                "needs_clarification": False,
+                "references_pending_question": True,
+                "user_correction": False,
+                "reasoning_trace_short": "change_system_while_department_selection_pending",
+            }
+
+        self.agent.gigachat.complete_json = forced_change_system
+        response = self.agent.handle_message("s1", "Хочу сменить АС на АСК")
+
+        state = self.repo.get_slot_state("s1")
+        self.assertEqual(state.get("resolved_system_id"), 89)
+        self.assertEqual(state.get("system_raw"), self.repo.systems[89]["system_name_raw"])
+        self.assertIsNone(state.get("department_raw"))
+        self.assertIsNotNone(response.pending_question)
+        self.assertEqual(response.pending_question.topic, "department")
+
     def test_interpretation_detects_system_change_during_profile_confirmation(self) -> None:
         self.repo.update_slot_state(
             "s1",

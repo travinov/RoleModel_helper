@@ -69,7 +69,6 @@ SLOT_ENTITY_MIN_SCORE = {
 }
 SYSTEM_ENTITY_MIN_SCORE = 0.45
 ORG_SLOT_TOPICS = {"position", "city", "department"}
-PENDING_SYSTEM_CHANGE_CONFIDENCE = 0.70
 SLOT_CONFIRM_GAP = 0.10
 ROLE_DISCOVERY_LIST_LIMIT = 20
 PHASE_BY_SLOT = {
@@ -183,6 +182,7 @@ class ChatAgent:
                     dialog_act="RESET_CONTEXT",
                 )
 
+        self._apply_change_system_guardrail(session_id, state, interpretation, text)
         self._apply_pending_slot_guardrail(session_id, state, interpretation, text)
 
         if interpretation.dialog_act in {"SELECT_OPTION", "SHOW_MORE"}:
@@ -1207,12 +1207,7 @@ class ChatAgent:
 
         entities = dict(interpretation.entities or {})
         system_raw = self._clean_slot_text(entities.get("system_raw"))
-        explicit_system_change = (
-            interpretation.dialog_act == "CHANGE_SYSTEM"
-            and interpretation.context_shift == "CHANGE_SYSTEM_FOCUS"
-            and interpretation.confidence >= PENDING_SYSTEM_CHANGE_CONFIDENCE
-            and bool(system_raw)
-        )
+        explicit_system_change = interpretation.dialog_act == "CHANGE_SYSTEM" and bool(system_raw)
         if explicit_system_change:
             self.search_repository.log_tool_call(
                 session_id,
@@ -1268,6 +1263,37 @@ class ChatAgent:
                     "allowed_system_change": False,
                 },
             )
+
+    def _apply_change_system_guardrail(
+        self,
+        session_id: str,
+        state: dict[str, Any],
+        interpretation: TurnInterpretation,
+        raw_text: str,
+    ) -> None:
+        system_raw = self._clean_slot_text((interpretation.entities or {}).get("system_raw"))
+        if interpretation.dialog_act != "CHANGE_SYSTEM" or not system_raw:
+            return
+        if interpretation.intent_type == "INSTRUCTION_LOOKUP" or interpretation.dialog_act == "RESET_CONTEXT":
+            return
+        if interpretation.context_shift == "CHANGE_SYSTEM_FOCUS":
+            return
+        if not (state.get("resolved_system_id") or state.get("system_raw")):
+            return
+        if not self._entity_value_is_valid_for_system(session_id, system_raw, state):
+            return
+        interpretation.context_shift = "CHANGE_SYSTEM_FOCUS"
+        self.search_repository.log_tool_call(
+            session_id,
+            ToolAttempt(
+                tool_name="change_system_focus_guardrail",
+                attempt_no=1,
+                input_payload={"text": raw_text, "system_raw": system_raw},
+                result_status="success",
+                result_summary="forced_change_system_focus",
+            ),
+            {"system_raw": system_raw},
+        )
 
     def _extract_pending_slot_value(
         self,

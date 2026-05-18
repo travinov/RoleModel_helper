@@ -138,6 +138,20 @@ class ConversationPolicyService:
                 self.search_repository.update_slot_state(session_id, context_shift="NONE")
                 interpretation.context_shift = "NONE"
                 return {}
+            pending_question = state.get("pending_question") or {}
+            pending_topic = str(pending_question.get("topic") or "")
+            clear_unconfirmed_org_slot: dict[str, Any] = {}
+            if pending_question.get("kind") in {"slot_request", "candidate_selection"} and pending_topic in {
+                "position",
+                "city",
+                "department",
+            }:
+                clear_unconfirmed_org_slot.update(
+                    {
+                        f"{pending_topic}_raw": None,
+                        f"{pending_topic}_normalized": None,
+                    }
+                )
             self.search_repository.close_candidate_sets(session_id, topics=["system", "profile"])
             self.search_repository.update_slot_state(
                 session_id,
@@ -155,6 +169,7 @@ class ConversationPolicyService:
                 instruction_mode=None,
                 conversation_phase=None,
                 context_shift=shift,
+                **clear_unconfirmed_org_slot,
             )
             self.search_repository.set_session_resolution(session_id, system_id=None, profile_id=None)
             return {"response_prefix": "Переключаюсь на другую АС. Сохранил должность, город и отдел."}
