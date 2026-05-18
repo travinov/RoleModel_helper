@@ -48,16 +48,36 @@ class SlotResolutionService:
         best = candidates[0]
         best_score = float(best.get("score") or 0.0)
         value_norm = normalize_text(value)
-        exact = value_norm in {
-            normalize_text(best.get("system_name_raw")),
-            normalize_text(best.get("alias_text")),
-        }
+        alias_class = str(best.get("alias_class") or "SAFE").upper()
+        exact_system_name = value_norm == normalize_text(best.get("system_name_raw"))
+        exact_safe_alias = alias_class == "SAFE" and value_norm == normalize_text(best.get("alias_text"))
+        exact = exact_system_name or exact_safe_alias
         matched_by = set(best.get("matched_by") or [])
         second_score = float(candidates[1].get("score") or 0.0) if len(candidates) > 1 else 0.0
+        if alias_class == "UNSAFE" and not exact_system_name:
+            return SlotResolution(
+                slot_name="system",
+                raw_value=value,
+                status=SlotResolutionStatus.REJECTED,
+                confidence=best_score,
+                candidates=candidates,
+                source_kind=source_kind,
+                reason="unsafe_system_alias",
+            )
+        if alias_class == "AMBIGUOUS" and not exact_system_name:
+            return SlotResolution(
+                slot_name="system",
+                raw_value=value,
+                status=SlotResolutionStatus.CANDIDATES,
+                confidence=best_score,
+                candidates=[item for item in candidates if float(item.get("score") or 0.0) >= STRICT_SYSTEM_SUGGEST_SCORE],
+                source_kind=source_kind,
+                reason="ambiguous_system_alias",
+            )
         strong_score_match = best_score >= STRICT_SYSTEM_ACCEPT_SCORE and (
             len(candidates) == 1 or best_score - second_score >= 0.12
         )
-        strong_match = exact or "exact" in matched_by or "bracket_abbreviation" in matched_by or strong_score_match
+        strong_match = exact or (alias_class == "SAFE" and "bracket_abbreviation" in matched_by) or strong_score_match
 
         if strong_match:
             return SlotResolution(

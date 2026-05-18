@@ -133,6 +133,11 @@ class ConversationPolicyService:
             return {}
 
         if shift == "CHANGE_SYSTEM_FOCUS":
+            had_system_context = bool(state.get("resolved_system_id") or state.get("system_raw"))
+            if not had_system_context:
+                self.search_repository.update_slot_state(session_id, context_shift="NONE")
+                interpretation.context_shift = "NONE"
+                return {}
             self.search_repository.close_candidate_sets(session_id, topics=["system", "profile"])
             self.search_repository.update_slot_state(
                 session_id,

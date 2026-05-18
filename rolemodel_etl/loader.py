@@ -20,13 +20,34 @@ def file_sha256(path: str | Path) -> str:
 
 
 def normalize_alias(value: str) -> str:
-    normalized = value.lower().strip()
+    normalized = value.lower().replace("ё", "е").strip()
     normalized = re.sub(r"\[ci\d+\]", "", normalized, flags=re.IGNORECASE)
     normalized = re.sub(r"\(и\d+\)", "", normalized, flags=re.IGNORECASE)
     normalized = normalized.replace("(пром)", "")
     normalized = re.sub(r"[^a-zA-Zа-яА-Я0-9]+", " ", normalized)
     normalized = re.sub(r"\s+", " ", normalized).strip()
     return normalized
+
+
+SYSTEM_ALIAS_STOP_WORDS = {
+    "ас",
+    "автоматизированная система",
+    "система",
+    "пром",
+    "и2",
+    "и3",
+    "ci",
+    "пкап",
+    "доступ",
+}
+DEPARTMENT_ALIAS_STOP_WORDS = {
+    "отдел",
+    "управление",
+    "департамент",
+    "центр",
+    "команда",
+    "подразделение",
+}
 
 
 def build_system_aliases(system_name: str) -> list[str]:
@@ -45,6 +66,189 @@ def build_system_aliases(system_name: str) -> list[str]:
     return sorted(cleaned)
 
 
+def _split_alias_parts(value: str) -> list[str]:
+    return [part.strip(" .;:-") for part in re.split(r"[,;/]+", value) if part.strip(" .;:-")]
+
+
+def _upper_abbreviations(value: str) -> list[str]:
+    result: list[str] = []
+    for token in re.findall(r"\b[А-ЯЁA-Z]{2,12}\b", value or ""):
+        if re.fullmatch(r"CI\d+", token, flags=re.IGNORECASE):
+            continue
+        result.append(token)
+    return result
+
+
+def _bracket_aliases(value: str) -> list[str]:
+    result: list[str] = []
+    for group in re.findall(r"\(([^)]*)\)", value or ""):
+        group_norm = normalize_alias(group)
+        if re.fullmatch(r"и\d+", group_norm) or group_norm == "пром":
+            continue
+        result.extend(_split_alias_parts(group))
+    return result
+
+
+def _dash_tail_aliases(value: str) -> list[str]:
+    parts = re.split(r"\s+-\s+", value or "")
+    if len(parts) < 2:
+        return []
+    result: list[str] = []
+    for tail in parts[1:]:
+        result.extend(_split_alias_parts(tail))
+    return result
+
+
+def build_system_alias_candidates(system_name: str) -> list[str]:
+    aliases = set(build_system_aliases(system_name))
+    aliases.update(_bracket_aliases(system_name))
+    aliases.update(_dash_tail_aliases(system_name))
+    aliases.update(_upper_abbreviations(system_name))
+    return sorted({alias for alias in aliases if normalize_alias(alias)})
+
+
+def build_department_alias_candidates(department_name: str) -> list[str]:
+    aliases = {department_name.strip()}
+    aliases.update(_dash_tail_aliases(department_name))
+    aliases.update(_bracket_aliases(department_name))
+    aliases.update(_upper_abbreviations(department_name))
+    return sorted({alias for alias in aliases if normalize_alias(alias)})
+
+
+def _alias_is_upper_abbreviation(alias_text: str) -> bool:
+    return bool(re.fullmatch(r"[А-ЯЁA-Z]{2,12}", alias_text.strip()))
+
+
+def _classify_alias(
+    alias_text: str,
+    *,
+    collision_count: int,
+    stop_words: set[str],
+) -> tuple[str, str]:
+    alias_norm = normalize_alias(alias_text)
+    if not alias_norm:
+        return "UNSAFE", "empty"
+    if alias_norm in stop_words:
+        return "UNSAFE", "stop_word"
+    if alias_norm.isdigit() or re.fullmatch(r"ci\d+|и\d+", alias_norm, flags=re.IGNORECASE):
+        return "UNSAFE", "technical_token"
+    if len(alias_norm) <= 1:
+        return "UNSAFE", "too_short"
+    if len(alias_norm) == 2 and not _alias_is_upper_abbreviation(alias_text):
+        return "UNSAFE", "short_non_abbreviation"
+    if collision_count > 1:
+        return "AMBIGUOUS", "alias_collision"
+    return "SAFE", "unique_alias"
+
+
+def _insert_system_alias_candidates(cursor, snapshot_id: int) -> None:
+    cursor.execute("DELETE FROM system_alias_candidate WHERE snapshot_id = %s", (snapshot_id,))
+    cursor.execute(
+        "SELECT id, system_name_raw FROM system WHERE snapshot_id = %s",
+        (snapshot_id,),
+    )
+    systems = [(int(row[0]), str(row[1] or "")) for row in cursor.fetchall()]
+    aliases_by_key: dict[tuple[int, str], str] = {}
+    owners_by_alias: dict[str, set[int]] = {}
+    for system_id, system_name in systems:
+        for alias_text in build_system_alias_candidates(system_name):
+            alias_norm = normalize_alias(alias_text)
+            if not alias_norm:
+                continue
+            key = (system_id, alias_norm)
+            aliases_by_key.setdefault(key, alias_text)
+            owners_by_alias.setdefault(alias_norm, set()).add(system_id)
+
+    for (system_id, alias_norm), alias_text in aliases_by_key.items():
+        collision_count = len(owners_by_alias.get(alias_norm, set()))
+        alias_class, reason = _classify_alias(
+            alias_text,
+            collision_count=collision_count,
+            stop_words=SYSTEM_ALIAS_STOP_WORDS,
+        )
+        cursor.execute(
+            """
+            INSERT INTO system_alias_candidate (
+                snapshot_id,
+                system_id,
+                alias_text,
+                alias_normalized,
+                alias_source,
+                alias_class,
+                collision_count,
+                reason
+            )
+            VALUES (%s, %s, %s, %s, 'AUTO_EXTRACTED', %s, %s, %s)
+            ON CONFLICT (snapshot_id, system_id, alias_normalized)
+            DO UPDATE SET
+                alias_text = EXCLUDED.alias_text,
+                alias_class = EXCLUDED.alias_class,
+                collision_count = EXCLUDED.collision_count,
+                reason = EXCLUDED.reason
+            """,
+            (snapshot_id, system_id, alias_text, alias_norm, alias_class, collision_count, reason),
+        )
+
+
+def _insert_department_alias_candidates(cursor, snapshot_id: int) -> None:
+    cursor.execute("DELETE FROM department_alias_candidate WHERE snapshot_id = %s", (snapshot_id,))
+    cursor.execute(
+        """
+        SELECT DISTINCT department_name
+        FROM profile_department
+        WHERE snapshot_id = %s
+          AND coalesce(department_name, '') <> ''
+        """,
+        (snapshot_id,),
+    )
+    departments = [str(row[0] or "") for row in cursor.fetchall()]
+    aliases_by_key: dict[tuple[str, str], str] = {}
+    owners_by_alias: dict[str, set[str]] = {}
+    for department_name in departments:
+        for alias_text in build_department_alias_candidates(department_name):
+            alias_norm = normalize_alias(alias_text)
+            if not alias_norm:
+                continue
+            key = (department_name, alias_norm)
+            aliases_by_key.setdefault(key, alias_text)
+            owners_by_alias.setdefault(alias_norm, set()).add(department_name)
+
+    for (department_name, alias_norm), alias_text in aliases_by_key.items():
+        collision_count = len(owners_by_alias.get(alias_norm, set()))
+        alias_class, reason = _classify_alias(
+            alias_text,
+            collision_count=collision_count,
+            stop_words=DEPARTMENT_ALIAS_STOP_WORDS,
+        )
+        cursor.execute(
+            """
+            INSERT INTO department_alias_candidate (
+                snapshot_id,
+                department_name,
+                alias_text,
+                alias_normalized,
+                alias_source,
+                alias_class,
+                collision_count,
+                reason
+            )
+            VALUES (%s, %s, %s, %s, 'AUTO_EXTRACTED', %s, %s, %s)
+            ON CONFLICT (snapshot_id, department_name, alias_normalized)
+            DO UPDATE SET
+                alias_text = EXCLUDED.alias_text,
+                alias_class = EXCLUDED.alias_class,
+                collision_count = EXCLUDED.collision_count,
+                reason = EXCLUDED.reason
+            """,
+            (snapshot_id, department_name, alias_text, alias_norm, alias_class, collision_count, reason),
+        )
+
+
+def _seed_reference_alias_candidates(cursor, snapshot_id: int) -> None:
+    _insert_system_alias_candidates(cursor, snapshot_id)
+    _insert_department_alias_candidates(cursor, snapshot_id)
+
+
 def _set_search_path(cursor, schema: str) -> None:
     from psycopg2 import sql
 
@@ -60,6 +264,18 @@ def init_db(config: DBConfig) -> None:
         with conn.cursor() as cursor:
             _set_search_path(cursor, config.schema)
             cursor.execute(sql_script)
+            cursor.execute(
+                """
+                SELECT id
+                FROM snapshot
+                WHERE is_active = TRUE
+                ORDER BY loaded_at DESC, id DESC
+                LIMIT 1
+                """
+            )
+            row = cursor.fetchone()
+            if row:
+                _seed_reference_alias_candidates(cursor, int(row[0]))
     finally:
         conn.close()
 
@@ -452,6 +668,8 @@ def load_to_db(config: DBConfig, parsed: ParseResult, snapshot_label: Optional[s
                         issue.raw_value,
                     ),
                 )
+
+            _seed_reference_alias_candidates(cursor, snapshot_id)
 
             cursor.execute("UPDATE snapshot SET is_active = FALSE WHERE is_active = TRUE")
             cursor.execute("UPDATE snapshot SET is_active = TRUE WHERE id = %s", (snapshot_id,))

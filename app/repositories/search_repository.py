@@ -790,19 +790,42 @@ class SearchRepository:
                     WHERE is_active = TRUE
                     ORDER BY loaded_at DESC, id DESC
                     LIMIT 1
+                ),
+                alias_rows AS (
+                    SELECT
+                        sa.system_id,
+                        sa.alias_text,
+                        sa.alias_normalized,
+                        sa.alias_source,
+                        'SAFE'::text AS alias_class,
+                        1::integer AS collision_count
+                    FROM system_alias sa
+                    WHERE sa.is_active = TRUE
+                    UNION ALL
+                    SELECT
+                        sac.system_id,
+                        sac.alias_text,
+                        sac.alias_normalized,
+                        sac.alias_source,
+                        sac.alias_class,
+                        sac.collision_count
+                    FROM system_alias_candidate sac
                 )
                 SELECT
                     s.id AS system_id,
                     s.system_name_raw,
                     s.ci_code,
-                    sa.alias_text,
-                    similarity(sa.alias_normalized, %s) AS alias_score,
+                    ar.alias_text,
+                    ar.alias_class,
+                    ar.collision_count,
+                    ar.alias_source,
+                    similarity(ar.alias_normalized, %s) AS alias_score,
                     similarity(lower(s.system_name_raw), %s) AS system_score
                 FROM active_snapshot a
                 JOIN system s ON s.snapshot_id = a.id
-                LEFT JOIN system_alias sa ON sa.system_id = s.id AND sa.is_active = TRUE
+                LEFT JOIN alias_rows ar ON ar.system_id = s.id
                 ORDER BY GREATEST(
-                    COALESCE(similarity(sa.alias_normalized, %s), 0),
+                    COALESCE(similarity(ar.alias_normalized, %s), 0),
                     similarity(lower(s.system_name_raw), %s)
                 ) DESC,
                 s.system_name_raw ASC
@@ -817,6 +840,7 @@ class SearchRepository:
             rows = [dict(row) for row in cursor.fetchall()]
         deduped: dict[int, dict[str, Any]] = {}
         for row in rows:
+            alias_class = str(row.get("alias_class") or "SAFE").upper()
             structured_score = _score_system_candidate(
                 query_text,
                 str(row.get("system_name_raw") or ""),
@@ -827,12 +851,18 @@ class SearchRepository:
                 float(row.get("system_score") or 0),
                 float(structured_score.get("score") or 0),
             )
+            if alias_class == "UNSAFE":
+                score = min(score, 0.29)
+            elif alias_class == "AMBIGUOUS":
+                score = min(max(score, 0.60), 0.72)
             if score < 0.30:
                 continue
             current = deduped.get(int(row["system_id"]))
             if current is None or score > float(current["score"]):
                 row["score"] = score
                 row["matched_by"] = structured_score.get("matched_by") or ["trigram"]
+                row["alias_class"] = alias_class
+                row["collision_count"] = int(row.get("collision_count") or 1)
                 deduped[int(row["system_id"])] = row
         return sorted(deduped.values(), key=lambda item: item["score"], reverse=True)[:limit]
 
@@ -879,21 +909,44 @@ class SearchRepository:
                     WHERE is_active = TRUE
                     ORDER BY loaded_at DESC, id DESC
                     LIMIT 1
+                ),
+                alias_rows AS (
+                    SELECT
+                        sa.system_id,
+                        sa.alias_text,
+                        sa.alias_normalized,
+                        sa.alias_source,
+                        'SAFE'::text AS alias_class,
+                        1::integer AS collision_count
+                    FROM system_alias sa
+                    WHERE sa.is_active = TRUE
+                    UNION ALL
+                    SELECT
+                        sac.system_id,
+                        sac.alias_text,
+                        sac.alias_normalized,
+                        sac.alias_source,
+                        sac.alias_class,
+                        sac.collision_count
+                    FROM system_alias_candidate sac
                 )
                 SELECT
                     s.id AS system_id,
                     s.system_name_raw,
                     s.ci_code,
-                    sa.alias_text,
-                    similarity(coalesce(sa.alias_normalized, ''), %s) AS alias_score,
+                    ar.alias_text,
+                    ar.alias_class,
+                    ar.collision_count,
+                    ar.alias_source,
+                    similarity(coalesce(ar.alias_normalized, ''), %s) AS alias_score,
                     similarity(lower(s.system_name_raw), %s) AS system_score
                 FROM active_snapshot a
                 JOIN system s ON s.snapshot_id = a.id
-                LEFT JOIN system_alias sa ON sa.system_id = s.id AND sa.is_active = TRUE
+                LEFT JOIN alias_rows ar ON ar.system_id = s.id
                 WHERE lower(s.system_name_raw) %% %s
-                   OR coalesce(sa.alias_normalized, '') %% %s
+                   OR coalesce(ar.alias_normalized, '') %% %s
                    OR lower(s.system_name_raw) LIKE ('%%' || %s || '%%')
-                   OR coalesce(sa.alias_normalized, '') LIKE ('%%' || %s || '%%')
+                   OR coalesce(ar.alias_normalized, '') LIKE ('%%' || %s || '%%')
                 ORDER BY s.system_name_raw ASC
                 """,
                 (
@@ -912,6 +965,7 @@ class SearchRepository:
             system_id = int(row["system_id"])
             system_name = str(row.get("system_name_raw") or "")
             alias_text = str(row.get("alias_text") or "")
+            alias_class = str(row.get("alias_class") or "SAFE").upper()
             system_name_norm = normalize_text(system_name)
             alias_norm = normalize_text(alias_text)
             structured_score = _score_system_candidate(query_text, system_name, alias_text)
@@ -920,14 +974,30 @@ class SearchRepository:
                 float(row.get("system_score") or 0),
                 float(structured_score.get("score") or 0),
             )
-            exact_match = query_norm in {system_name_norm, alias_norm}
-            strong_match = exact_match or query_norm in system_name_norm or (alias_norm and query_norm in alias_norm) or score >= 0.74
+            if alias_class == "UNSAFE":
+                score = min(score, 0.29)
+            elif alias_class == "AMBIGUOUS":
+                score = min(max(score, 0.60), 0.72)
+            if score < 0.30:
+                continue
+            exact_match = query_norm == system_name_norm or (alias_class == "SAFE" and alias_norm and query_norm == alias_norm)
+            safe_alias_match = alias_class == "SAFE" and alias_norm and query_norm == alias_norm
+            strong_match = (
+                query_norm == system_name_norm
+                or safe_alias_match
+                or query_norm in system_name_norm
+                or (alias_class == "SAFE" and alias_norm and query_norm in alias_norm)
+                or score >= 0.74
+            )
             has_profile_access = access_counts.get(system_id, 0) > 0
             payload = {
                 "system_id": system_id,
                 "system_name_raw": system_name,
                 "ci_code": row.get("ci_code"),
                 "alias_text": alias_text or None,
+                "alias_class": alias_class,
+                "collision_count": int(row.get("collision_count") or 1),
+                "alias_source": row.get("alias_source"),
                 "score": round(score, 4),
                 "has_profile_access": has_profile_access,
                 "profiles_count": access_counts.get(system_id, 0),
@@ -1116,14 +1186,20 @@ class SearchRepository:
                 )
                 SELECT
                     pd.department_name,
+                    dac.alias_text,
+                    dac.alias_class,
+                    dac.collision_count,
                     coalesce(string_agg(DISTINCT pss.segment_name, ' '), '') AS structure_text,
                     coalesce(string_agg(DISTINCT pp.position_name, ' '), '') AS position_text
                 FROM active_snapshot a
                 JOIN profile p ON p.snapshot_id = a.id
                 JOIN profile_department pd ON pd.profile_id = p.id
+                LEFT JOIN department_alias_candidate dac
+                    ON dac.snapshot_id = a.id
+                   AND dac.department_name = pd.department_name
                 LEFT JOIN profile_position pp ON pp.profile_id = p.id
                 LEFT JOIN profile_structure_segment pss ON pss.profile_id = p.id
-                GROUP BY p.id, pd.department_name
+                GROUP BY p.id, pd.department_name, dac.alias_text, dac.alias_class, dac.collision_count
                 """
             )
             rows = [dict(row) for row in cursor.fetchall()]
@@ -1132,6 +1208,8 @@ class SearchRepository:
             department_name = str(row.get("department_name") or "").strip()
             if not department_name:
                 continue
+            alias_text = str(row.get("alias_text") or "").strip()
+            alias_class = str(row.get("alias_class") or "SAFE").upper()
             score_payload = _score_department_candidate(
                 query_text=query_text,
                 department_name=department_name,
@@ -1140,6 +1218,36 @@ class SearchRepository:
                 position=position,
                 position_haystack=str(row.get("position_text") or ""),
             )
+            alias_score_payload = None
+            if alias_text:
+                alias_score_payload = _score_department_candidate(
+                    query_text=query_text,
+                    department_name=alias_text,
+                    city=city,
+                    city_haystack=f"{row.get('structure_text') or ''} {department_name}",
+                    position=position,
+                    position_haystack=str(row.get("position_text") or ""),
+                )
+                if alias_score_payload is not None:
+                    if alias_class == "UNSAFE":
+                        alias_score_payload["score"] = min(float(alias_score_payload["score"]), 0.29)
+                    elif alias_class == "AMBIGUOUS":
+                        alias_score_payload["score"] = min(max(float(alias_score_payload["score"]), 0.60), 0.82)
+                    elif normalize_text(query_text) == normalize_text(alias_text):
+                        alias_score_payload["score"] = max(float(alias_score_payload["score"]), 0.96)
+                        alias_score_payload["department_text_score"] = max(
+                            float(alias_score_payload.get("department_text_score") or 0),
+                            1.0,
+                        )
+                    alias_score_payload["alias_text"] = alias_text
+                    alias_score_payload["alias_class"] = alias_class
+                    alias_score_payload["collision_count"] = int(row.get("collision_count") or 1)
+                    if float(alias_score_payload["score"]) < _SLOT_CANDIDATE_SCORE_THRESHOLD:
+                        alias_score_payload = None
+            if alias_score_payload is not None and (
+                score_payload is None or float(alias_score_payload["score"]) > float(score_payload["score"])
+            ):
+                score_payload = alias_score_payload
             if score_payload is None:
                 continue
             key = normalize_text(department_name)

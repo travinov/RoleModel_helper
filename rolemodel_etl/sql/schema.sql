@@ -149,6 +149,34 @@ CREATE TABLE IF NOT EXISTS system_alias (
     UNIQUE (system_id, alias_normalized)
 );
 
+CREATE TABLE IF NOT EXISTS system_alias_candidate (
+    id BIGSERIAL PRIMARY KEY,
+    snapshot_id BIGINT NOT NULL REFERENCES snapshot(id) ON DELETE CASCADE,
+    system_id BIGINT NOT NULL REFERENCES system(id) ON DELETE CASCADE,
+    alias_text TEXT NOT NULL,
+    alias_normalized TEXT NOT NULL,
+    alias_source TEXT NOT NULL CHECK (alias_source IN ('AUTO_EXTRACTED')),
+    alias_class TEXT NOT NULL CHECK (alias_class IN ('SAFE', 'AMBIGUOUS', 'UNSAFE')),
+    collision_count INTEGER NOT NULL DEFAULT 1 CHECK (collision_count >= 1),
+    reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (snapshot_id, system_id, alias_normalized)
+);
+
+CREATE TABLE IF NOT EXISTS department_alias_candidate (
+    id BIGSERIAL PRIMARY KEY,
+    snapshot_id BIGINT NOT NULL REFERENCES snapshot(id) ON DELETE CASCADE,
+    department_name TEXT NOT NULL,
+    alias_text TEXT NOT NULL,
+    alias_normalized TEXT NOT NULL,
+    alias_source TEXT NOT NULL CHECK (alias_source IN ('AUTO_EXTRACTED')),
+    alias_class TEXT NOT NULL CHECK (alias_class IN ('SAFE', 'AMBIGUOUS', 'UNSAFE')),
+    collision_count INTEGER NOT NULL DEFAULT 1 CHECK (collision_count >= 1),
+    reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (snapshot_id, department_name, alias_normalized)
+);
+
 CREATE TABLE IF NOT EXISTS chat_session (
     id UUID PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -367,6 +395,10 @@ CREATE INDEX IF NOT EXISTS idx_entitlement_type ON entitlement (entitlement_type
 CREATE INDEX IF NOT EXISTS idx_pea_snapshot_level ON profile_entitlement_access (snapshot_id, access_level);
 CREATE INDEX IF NOT EXISTS idx_etl_error_run_id ON etl_error (run_id);
 CREATE INDEX IF NOT EXISTS idx_system_alias_norm ON system_alias USING GIN (alias_normalized gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_snapshot_class ON system_alias_candidate (snapshot_id, alias_class);
+CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_norm ON system_alias_candidate USING GIN (alias_normalized gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_snapshot_class ON department_alias_candidate (snapshot_id, alias_class);
+CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_norm ON department_alias_candidate USING GIN (alias_normalized gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_chat_message_session ON chat_message (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tool_call_log_session ON tool_call_log (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_candidate_set_session ON chat_candidate_set (session_id, created_at);

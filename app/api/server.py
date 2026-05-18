@@ -24,7 +24,7 @@ from app.models.api import (
 )
 from app.repositories.search_repository import SearchRepository
 from app.rag.service import RagService
-from rolemodel_etl.loader import load_to_db
+from rolemodel_etl.loader import init_db, load_to_db
 from rolemodel_etl.parser import parse_workbook
 
 from ..config import AppConfig
@@ -104,6 +104,7 @@ def _backup_database(config: AppConfig) -> str:
 
 def build_app(config: AppConfig | None = None) -> FastAPI:
     app_config = config or AppConfig.from_env()
+    init_db(app_config.db)
     app = FastAPI(title="RoleModel Chat Agent", version="0.1.0")
 
     agent = ChatAgent(app_config)

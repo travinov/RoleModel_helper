@@ -1126,6 +1126,178 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(response.pending_question.topic, "position")
         self.assertEqual(response.intent_type, "ROLE_DISCOVERY")
 
+    def test_initial_safe_system_alias_starts_role_discovery_without_change_prefix(self) -> None:
+        system_name = "Пуаро 2.0 (И2) [CI03345728]"
+        self.repo.system_candidates_map["Пуаро"] = [
+            {
+                "system_id": 55,
+                "system_name_raw": system_name,
+                "ci_code": "[CI03345728]",
+                "alias_text": "Пуаро",
+                "alias_class": "SAFE",
+                "score": 1.0,
+                "matched_by": ["exact"],
+            }
+        ]
+        self.repo.systems[55] = {
+            "id": 55,
+            "system_name_raw": system_name,
+            "ci_code": "[CI03345728]",
+        }
+
+        response = self.agent.handle_message("s1", "Пуаро")
+        state = self.repo.get_slot_state("s1")
+
+        self.assertEqual(response.intent_type, "ROLE_DISCOVERY")
+        self.assertEqual(response.pending_question.topic, "position")
+        self.assertEqual(state.get("resolved_system_id"), 55)
+        self.assertNotIn("Переключаюсь на другую АС", response.assistant_text)
+
+    def test_unsafe_system_alias_is_not_auto_accepted(self) -> None:
+        from app.agent.turn_plan import SlotResolutionStatus, SlotSourceKind
+
+        self.repo.system_candidates_map["АС"] = [
+            {
+                "system_id": 55,
+                "system_name_raw": "Пуаро 2.0 (И2) [CI03345728]",
+                "alias_text": "АС",
+                "alias_class": "UNSAFE",
+                "score": 0.95,
+            }
+        ]
+
+        result = self.agent.slot_resolution_service.resolve_system(
+            "АС",
+            self.repo.get_slot_state("s1"),
+            SlotSourceKind.LLM_ENTITY,
+        )
+        self.assertEqual(result.status, SlotResolutionStatus.REJECTED)
+        self.assertEqual(result.reason, "unsafe_system_alias")
+
+    def test_ambiguous_system_alias_returns_candidates(self) -> None:
+        from app.agent.turn_plan import SlotResolutionStatus, SlotSourceKind
+
+        self.repo.system_candidates_map["ЕФС"] = [
+            {
+                "system_id": 1,
+                "system_name_raw": "ЕФС. Первая система (И2) [CI00000001]",
+                "alias_text": "ЕФС",
+                "alias_class": "AMBIGUOUS",
+                "score": 0.95,
+            },
+            {
+                "system_id": 2,
+                "system_name_raw": "ЕФС. Вторая система (И2) [CI00000002]",
+                "alias_text": "ЕФС",
+                "alias_class": "AMBIGUOUS",
+                "score": 0.94,
+            },
+        ]
+
+        result = self.agent.slot_resolution_service.resolve_system(
+            "ЕФС",
+            self.repo.get_slot_state("s1"),
+            SlotSourceKind.LLM_ENTITY,
+        )
+        self.assertEqual(result.status, SlotResolutionStatus.CANDIDATES)
+        self.assertEqual(result.reason, "ambiguous_system_alias")
+
+    def test_department_alias_can_resolve_short_abbreviation(self) -> None:
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="SYSTEM_DISCOVERY",
+            last_intent_type="SYSTEM_DISCOVERY",
+            position_raw="Риск-менеджер",
+            city_raw="Москва",
+            pending_question={
+                "kind": "slot_request",
+                "topic": "department",
+                "prompt": "Укажите отдел",
+            },
+        )
+        department = "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ"
+        self.repo.department_candidates_map[("ФИ", "Москва")] = [
+            {
+                "value": department,
+                "score": 0.96,
+                "alias_text": "ФИ",
+                "alias_class": "SAFE",
+            }
+        ]
+
+        response = self.agent.handle_message("s1", "ФИ")
+        state = self.repo.get_slot_state("s1")
+
+        self.assertEqual(state.get("department_raw"), department)
+        self.assertIsNotNone(response.answer)
+        self.assertEqual(response.answer.answer_type, "SYSTEM_DISCOVERY")
+
+    def test_mixed_slot_ambiguous_system_alias_is_not_resolved(self) -> None:
+        self.repo.system_candidates_map["ЕФС"] = [
+            {
+                "system_id": 1,
+                "system_name_raw": "ЕФС. Первая система (И2) [CI00000001]",
+                "alias_text": "ЕФС",
+                "alias_class": "AMBIGUOUS",
+                "score": 0.95,
+            }
+        ]
+        candidate = self.agent._mixed_slot_candidate(
+            "system",
+            "ЕФС",
+            0,
+            self.repo.get_slot_state("s1"),
+            {},
+        )
+        self.assertIsNotNone(candidate)
+        self.assertEqual(candidate["status"], "ambiguous")
+        self.assertEqual(candidate["value"], "ЕФС")
+
+    def test_ambiguous_department_alias_prompts_candidates_instead_of_autofill(self) -> None:
+        department = "Отдел дочерних банков"
+        self.repo.department_candidates_map[("ДБ", None)] = [
+            {
+                "value": department,
+                "score": 0.82,
+                "alias_text": "ДБ",
+                "alias_class": "AMBIGUOUS",
+            }
+        ]
+        validation = self.agent._validate_entity_value_for_org_slot(
+            "s1",
+            "department",
+            "ДБ",
+            self.repo.get_slot_state("s1"),
+            log_probe=False,
+        )
+        self.assertTrue(validation["valid"])
+        self.assertIsNone(validation["canonical_value"])
+
+        mixed = self.agent._mixed_slot_candidate(
+            "department",
+            "ДБ",
+            2,
+            self.repo.get_slot_state("s1"),
+            {},
+        )
+        self.assertIsNotNone(mixed)
+        self.assertEqual(mixed["status"], "ambiguous")
+        self.assertEqual(mixed["value"], "ДБ")
+
+    def test_initial_change_system_focus_is_downgraded_to_start_context_shift(self) -> None:
+        interpretation = TurnInterpretation(
+            dialog_act="CHANGE_SYSTEM",
+            intent_type="ROLE_DISCOVERY",
+            entities={"system_raw": "Пуаро"},
+            confidence=0.9,
+            goal_transition="START",
+            context_shift="CHANGE_SYSTEM_FOCUS",
+        )
+        self.agent.policy_service.apply_context_shift("s1", self.repo.get_slot_state("s1"), interpretation)
+        self.agent.policy_service.apply_goal_transition("s1", self.repo.get_slot_state("s1"), interpretation)
+        state = self.repo.get_slot_state("s1")
+        self.assertEqual(state.get("context_shift"), "NONE")
+
     def test_system_discovery_collects_org_slots_without_system(self) -> None:
         response = self.agent.handle_message("s1", "Какие АС мне доступны?")
         self.assertEqual(response.intent_type, "SYSTEM_DISCOVERY")
@@ -2051,7 +2223,7 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         state = self.repo.get_slot_state("s1")
         self.assertEqual(state.get("active_goal"), "ROLE_DISCOVERY")
         self.assertIsNone(state.get("requested_entitlement_raw"))
-        self.assertEqual(state.get("system_raw"), "АСК")
+        self.assertEqual(state.get("system_raw"), "АСК Риск-менеджмент (ПРОМ) [CI90000001]")
         self.assertIsNone(response.context.get("requested_role"))
         self.assertEqual(response.pending_question.topic, "position")
 

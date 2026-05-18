@@ -1307,7 +1307,27 @@ class ChatAgent:
                     {"candidates": browse_candidates[:5]},
                 )
                 if browse_candidates and best_browse_score >= 0.45:
-                    if similarity(system_raw, state.get("system_raw")) < 0.98:
+                    if self._should_autoselect_browse_candidate(browse_candidates):
+                        best_system = browse_candidates[0]
+                        self.search_repository.close_candidate_sets(session_id, topics=["system", "profile"])
+                        self.search_repository.update_slot_state(
+                            session_id,
+                            system_raw=best_system["system_name_raw"],
+                            system_query_raw=system_raw,
+                            system_resolution_mode="DIRECT",
+                            resolved_system_id=best_system["system_id"],
+                            resolved_profile_id=None,
+                            profile_candidates=None,
+                            instruction_mode=None,
+                            pending_question=None,
+                            pending_slot=None,
+                            needs_confirmation=False,
+                            confirmation_topic=None,
+                            confirmation_options=None,
+                        )
+                        self.search_repository.set_session_resolution(session_id, system_id=best_system["system_id"], profile_id=None)
+                        state = self.search_repository.get_slot_state(session_id)
+                    elif similarity(system_raw, state.get("system_raw")) < 0.98:
                         self.search_repository.close_candidate_sets(session_id, topics=["system", "profile"])
                         self.search_repository.update_slot_state(
                             session_id,
@@ -1326,7 +1346,7 @@ class ChatAgent:
                         )
                         self.search_repository.set_session_resolution(session_id, system_id=None, profile_id=None)
                         state = self.search_repository.get_slot_state(session_id)
-                    if (state.get("active_goal") or state.get("last_intent_type")) == "SYSTEM_DISCOVERY":
+                    if (state.get("active_goal") or state.get("last_intent_type")) in {"UNKNOWN", "SYSTEM_DISCOVERY"}:
                         result["suggested_intent"] = "ROLE_DISCOVERY"
                     system_raw = None
                 else:
@@ -1362,9 +1382,10 @@ class ChatAgent:
             )
             if resolution.status == SlotResolutionStatus.ACCEPTED:
                 previous_system = state.get("system_raw")
+                previous_goal = state.get("active_goal") or state.get("last_intent_type") or "UNKNOWN"
                 self.state_reducer.apply_slot_resolution(session_id, resolution)
                 state = self.search_repository.get_slot_state(session_id)
-                if (state.get("active_goal") or state.get("last_intent_type")) == "SYSTEM_DISCOVERY" or (
+                if previous_goal == "UNKNOWN" or (state.get("active_goal") or state.get("last_intent_type")) == "SYSTEM_DISCOVERY" or (
                     previous_system and similarity(system_raw, previous_system) < 0.98
                 ):
                     result["suggested_intent"] = "ROLE_DISCOVERY"
@@ -2022,6 +2043,9 @@ class ChatAgent:
 
     def _should_autoselect_browse_candidate(self, candidates: list[dict[str, Any]]) -> bool:
         if not candidates:
+            return False
+        alias_class = str(candidates[0].get("alias_class") or "SAFE").upper()
+        if alias_class in {"UNSAFE", "AMBIGUOUS"}:
             return False
         if len(candidates) == 1:
             return True
@@ -2923,7 +2947,10 @@ class ChatAgent:
         raw_norm = normalize_text(raw_value)
         best_name_norm = normalize_text(best.get("system_name_raw"))
         best_alias_norm = normalize_text(best.get("alias_text"))
-        exact_signal = raw_norm in {best_name_norm, best_alias_norm}
+        alias_class = str(best.get("alias_class") or "SAFE").upper()
+        exact_signal = raw_norm == best_name_norm or (alias_class == "SAFE" and raw_norm == best_alias_norm)
+        if alias_class in {"UNSAFE", "AMBIGUOUS"} and raw_norm != best_name_norm:
+            return None
         confident = exact_signal or len(candidates) == 1 or (best_score - second_score >= SLOT_CONFIRM_GAP)
         if not confident:
             return None
@@ -2949,7 +2976,10 @@ class ChatAgent:
         raw_norm = normalize_text(raw_value)
         best_name_norm = normalize_text(best.get("system_name_raw"))
         best_alias_norm = normalize_text(best.get("alias_text"))
-        exact_signal = raw_norm in {best_name_norm, best_alias_norm}
+        alias_class = str(best.get("alias_class") or "SAFE").upper()
+        exact_signal = raw_norm == best_name_norm or (alias_class == "SAFE" and raw_norm == best_alias_norm)
+        if alias_class in {"UNSAFE", "AMBIGUOUS"} and raw_norm != best_name_norm:
+            return None
         confident = (
             exact_signal
             or len(candidates) == 1
@@ -3232,11 +3262,11 @@ class ChatAgent:
         best = candidates[0]
         best_score = float(best.get("score") or 0.0)
         exact_system = any(
-            value_norm
-            in {
-                normalize_text(candidate.get("system_name_raw")),
-                normalize_text(candidate.get("alias_text")),
-            }
+            value_norm == normalize_text(candidate.get("system_name_raw"))
+            or (
+                str(candidate.get("alias_class") or "SAFE").upper() == "SAFE"
+                and value_norm == normalize_text(candidate.get("alias_text"))
+            )
             for candidate in candidates
         )
         if exact_system:
@@ -3342,6 +3372,11 @@ class ChatAgent:
 
         best = candidates[0]
         best_score = float(best.get("score") or 0.0)
+        alias_class = str(best.get("alias_class") or "SAFE").upper()
+        if alias_class == "UNSAFE":
+            return {"valid": False, "reason": "unsafe_dictionary_alias", "best_score": best_score}
+        if alias_class == "AMBIGUOUS":
+            return {"valid": True, "exact": False, "canonical_value": None, "best_score": best_score}
         if best_score < SLOT_ENTITY_MIN_SCORE.get(slot_name, 0.45):
             return {"valid": False, "reason": "low_dictionary_score", "best_score": best_score}
 
@@ -3588,21 +3623,26 @@ class ChatAgent:
             best = pool[0]
             second_score = float(pool[1].get("score") or 0.0) if len(pool) > 1 else 0.0
             score = float(best.get("score") or 0.0)
-            exact = normalize_text(segment) in {
-                normalize_text(best.get("system_name_raw")),
-                normalize_text(best.get("alias_text")),
-            }
+            alias_class = str(best.get("alias_class") or "SAFE").upper()
+            exact = normalize_text(segment) == normalize_text(best.get("system_name_raw")) or (
+                alias_class == "SAFE" and normalize_text(segment) == normalize_text(best.get("alias_text"))
+            )
             if exact:
                 score = max(score, 1.05)
             segment_norm = normalize_text(segment)
-            if (
+            if alias_class not in {"UNSAFE", "AMBIGUOUS"} and (
                 segment_index == 0
                 and len(segment_norm.split()) == 1
                 and 3 <= len(segment_norm) <= 8
                 and score >= 0.75
             ):
                 score = max(score, 0.9)
-            status = "resolved" if exact or score >= 0.78 or (len(pool) == 1 and score >= 0.55) else "ambiguous"
+            if alias_class == "UNSAFE" and not exact:
+                return None
+            if alias_class == "AMBIGUOUS" and not exact:
+                status = "ambiguous"
+            else:
+                status = "resolved" if exact or score >= 0.78 or (len(pool) == 1 and score >= 0.55) else "ambiguous"
             if status == "ambiguous" and score < 0.45:
                 return None
             return {
@@ -3640,9 +3680,15 @@ class ChatAgent:
             return None
         second_score = float(pool[1].get("score") or 0.0) if len(pool) > 1 else 0.0
         score = float(best.get("score") or 0.0)
+        alias_class = str(best.get("alias_class") or "SAFE").upper()
+        if alias_class == "UNSAFE":
+            return None
         exact = normalize_text(segment) == normalize_text(best_value)
         strong_threshold = {"city": 0.88, "department": 0.86, "position": 0.86}[slot_name]
-        status = "resolved" if exact or score >= strong_threshold or (len(pool) == 1 and score >= 0.55) else "ambiguous"
+        if alias_class == "AMBIGUOUS":
+            status = "ambiguous"
+        else:
+            status = "resolved" if exact or score >= strong_threshold or (len(pool) == 1 and score >= 0.55) else "ambiguous"
         if status == "ambiguous" and score < 0.45:
             return None
         return {
