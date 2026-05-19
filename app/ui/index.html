@@ -1246,13 +1246,13 @@
       }
 
       function formatDisplayDate(isoDate) {
-        const match = String(isoDate || "").match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+        const match = String(isoDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (!match) return "";
         return `${match[3]}/${match[2]}/${match[1]}`;
       }
 
       function parseDisplayDate(value) {
-        const match = String(value || "").trim().match(/^(\\d{1,2})[./-](\\d{1,2})[./-](\\d{4})$/);
+        const match = String(value || "").trim().match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
         if (!match) return null;
         const day = Number(match[1]);
         const month = Number(match[2]);
@@ -1271,7 +1271,7 @@
       }
 
       function formatDateInputValue(value) {
-        const digits = String(value || "").replace(/\\D/g, "").slice(0, 8);
+        const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
         const parts = [];
         if (digits.length > 0) parts.push(digits.slice(0, 2));
         if (digits.length > 2) parts.push(digits.slice(2, 4));
