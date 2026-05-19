@@ -359,6 +359,12 @@
         box-shadow: 0 0 0 3px rgba(27, 108, 255, 0.08);
       }
 
+      .export-input.invalid {
+        border-color: rgba(185, 58, 58, 0.44);
+        background: rgba(255, 235, 235, 0.78);
+        box-shadow: 0 0 0 3px rgba(185, 58, 58, 0.08);
+      }
+
       .feedback-textarea {
         width: 100%;
         min-height: 88px;
@@ -1264,10 +1270,39 @@
         return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       }
 
+      function formatDateInputValue(value) {
+        const digits = String(value || "").replace(/\\D/g, "").slice(0, 8);
+        const parts = [];
+        if (digits.length > 0) parts.push(digits.slice(0, 2));
+        if (digits.length > 2) parts.push(digits.slice(2, 4));
+        if (digits.length > 4) parts.push(digits.slice(4, 8));
+        return parts.filter(Boolean).join("/");
+      }
+
+      function normalizeDateInput(inputEl) {
+        const nextValue = formatDateInputValue(inputEl.value);
+        inputEl.value = nextValue;
+        const isComplete = nextValue.length === 10;
+        const isValid = isComplete && Boolean(parseDisplayDate(nextValue));
+        inputEl.classList.toggle("invalid", isComplete && !isValid);
+        inputEl.setAttribute("aria-invalid", String(isComplete && !isValid));
+        return !isComplete || isValid;
+      }
+
+      function validateExportDateInputs() {
+        const fromOk = normalizeDateInput(exportDateFromEl);
+        const toOk = normalizeDateInput(exportDateToEl);
+        const fromComplete = exportDateFromEl.value.trim().length === 10;
+        const toComplete = exportDateToEl.value.trim().length === 10;
+        return fromOk && toOk && fromComplete && toComplete;
+      }
+
       function ensureExportDates() {
         const today = formatDisplayDate(todayIsoDate());
         if (!exportDateFromEl.value) exportDateFromEl.value = today;
         if (!exportDateToEl.value) exportDateToEl.value = exportDateFromEl.value || today;
+        normalizeDateInput(exportDateFromEl);
+        normalizeDateInput(exportDateToEl);
       }
 
       function setFeedbackPanelVisible(nextVisible) {
@@ -1918,7 +1953,7 @@
           setExportStatus("Укажите обе даты в формате ДД/ММ/ГГГГ.", "error");
           return;
         }
-        if (!dateFrom || !dateTo) {
+        if (!validateExportDateInputs() || !dateFrom || !dateTo) {
           setExportStatus("Дата должна быть в формате ДД/ММ/ГГГГ.", "error");
           return;
         }
@@ -2002,6 +2037,15 @@
         if (isSending) return;
         setExportPanelVisible(false);
         setExportStatus("");
+      });
+      [exportDateFromEl, exportDateToEl].forEach((dateInput) => {
+        dateInput.addEventListener("input", () => {
+          normalizeDateInput(dateInput);
+          setExportStatus("");
+        });
+        dateInput.addEventListener("blur", () => {
+          normalizeDateInput(dateInput);
+        });
       });
       feedbackUpEl.addEventListener("click", async () => {
         if (isSending) return;
