@@ -1013,11 +1013,11 @@
               <div class="export-form">
                 <div class="export-field">
                   <label class="export-label" for="export-date-from">Дата с</label>
-                  <input class="export-input" id="export-date-from" type="text" inputmode="numeric" placeholder="ДД/ММ/ГГГГ">
+                  <input class="export-input" id="export-date-from" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="ДД/ММ/ГГГГ">
                 </div>
                 <div class="export-field">
                   <label class="export-label" for="export-date-to">Дата по</label>
-                  <input class="export-input" id="export-date-to" type="text" inputmode="numeric" placeholder="ДД/ММ/ГГГГ">
+                  <input class="export-input" id="export-date-to" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="ДД/ММ/ГГГГ">
                 </div>
               </div>
               <div class="export-actions">
@@ -1282,11 +1282,29 @@
       function normalizeDateInput(inputEl) {
         const nextValue = formatDateInputValue(inputEl.value);
         inputEl.value = nextValue;
+        inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
         const isComplete = nextValue.length === 10;
         const isValid = isComplete && Boolean(parseDisplayDate(nextValue));
         inputEl.classList.toggle("invalid", isComplete && !isValid);
         inputEl.setAttribute("aria-invalid", String(isComplete && !isValid));
         return !isComplete || isValid;
+      }
+
+      function handleDateBeforeInput(event) {
+        if (event.inputType && event.inputType.startsWith("delete")) return;
+        if (event.inputType === "insertFromPaste") return;
+        const data = event.data || "";
+        if (data && /\D/.test(data)) {
+          event.preventDefault();
+        }
+      }
+
+      function handleDatePaste(event, inputEl) {
+        const clipboardText = event.clipboardData ? event.clipboardData.getData("text") : "";
+        if (!clipboardText) return;
+        event.preventDefault();
+        inputEl.value = formatDateInputValue(clipboardText);
+        normalizeDateInput(inputEl);
       }
 
       function validateExportDateInputs() {
@@ -2039,6 +2057,11 @@
         setExportStatus("");
       });
       [exportDateFromEl, exportDateToEl].forEach((dateInput) => {
+        dateInput.addEventListener("beforeinput", handleDateBeforeInput);
+        dateInput.addEventListener("paste", (event) => {
+          handleDatePaste(event, dateInput);
+          setExportStatus("");
+        });
         dateInput.addEventListener("input", () => {
           normalizeDateInput(dateInput);
           setExportStatus("");
