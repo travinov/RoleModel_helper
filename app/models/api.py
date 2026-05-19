@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -125,6 +126,11 @@ class UserMessageRequest(BaseModel):
 class SessionFeedbackRequest(BaseModel):
     rating: Literal["UP", "DOWN"]
     comment: Optional[str] = None
+
+
+class DialogueExportRequest(BaseModel):
+    date_from: date
+    date_to: date
 
 
 class AliasUpsertRequest(BaseModel):

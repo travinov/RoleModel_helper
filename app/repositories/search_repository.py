@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from datetime import date
 from typing import Any, Optional
 
 from psycopg2.extras import Json
@@ -356,6 +357,81 @@ class SearchRepository:
                 ORDER BY created_at, id
                 """,
                 (session_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def list_dialogue_export_sessions(self, date_from: date, date_to: date) -> list[dict[str, Any]]:
+        self._ensure_feedback_schema()
+        with db_cursor(self.config) as (_, cursor):
+            cursor.execute(
+                """
+                WITH target_sessions AS (
+                    SELECT DISTINCT s.id, s.created_at, s.updated_at, s.status
+                    FROM chat_session s
+                    WHERE s.created_at::date BETWEEN %s AND %s
+                       OR EXISTS (
+                           SELECT 1
+                           FROM chat_message m
+                           WHERE m.session_id = s.id
+                             AND m.created_at::date BETWEEN %s AND %s
+                       )
+                       OR EXISTS (
+                           SELECT 1
+                           FROM chat_session_feedback f
+                           WHERE f.session_id = s.id
+                             AND f.created_at::date BETWEEN %s AND %s
+                       )
+                ),
+                feedback_agg AS (
+                    SELECT f.session_id,
+                           jsonb_agg(
+                               jsonb_build_object(
+                                   'rating', f.rating,
+                                   'comment', f.comment,
+                                   'created_at', f.created_at
+                               )
+                               ORDER BY f.created_at
+                           ) AS feedback
+                    FROM chat_session_feedback f
+                    WHERE f.session_id IN (SELECT id FROM target_sessions)
+                    GROUP BY f.session_id
+                ),
+                messages_agg AS (
+                    SELECT m.session_id,
+                           jsonb_agg(
+                               jsonb_build_object(
+                                   'id', m.id,
+                                   'role', m.role,
+                                   'message_text', m.message_text,
+                                   'created_at', m.created_at,
+                                   'structured_payload', m.structured_payload
+                               )
+                               ORDER BY m.id
+                           ) AS messages
+                    FROM chat_message m
+                    WHERE m.session_id IN (SELECT id FROM target_sessions)
+                    GROUP BY m.session_id
+                ),
+                state_agg AS (
+                    SELECT st.session_id,
+                           to_jsonb(st) - 'context_snapshot' AS state
+                    FROM chat_slot_state st
+                    WHERE st.session_id IN (SELECT id FROM target_sessions)
+                )
+                SELECT ts.id AS session_id,
+                       ts.created_at,
+                       ts.updated_at,
+                       ts.status,
+                       COALESCE(f.feedback, '[]'::jsonb) AS feedback,
+                       COALESCE(st.state, '{}'::jsonb) AS state,
+                       COALESCE(m.messages, '[]'::jsonb) AS messages
+                FROM target_sessions ts
+                LEFT JOIN feedback_agg f ON f.session_id = ts.id
+                LEFT JOIN messages_agg m ON m.session_id = ts.id
+                LEFT JOIN state_agg st ON st.session_id = ts.id
+                ORDER BY ts.created_at, ts.id
+                """,
+                (date_from, date_to, date_from, date_to, date_from, date_to),
             )
             return [dict(row) for row in cursor.fetchall()]
 

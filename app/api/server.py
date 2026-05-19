@@ -9,11 +9,12 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from app.agent.service import ChatAgent
 from app.models.api import (
     AliasUpsertRequest,
+    DialogueExportRequest,
     RagIngestRequest,
     RagSourceCreateRequest,
     SessionFeedbackPayload,
@@ -24,6 +25,7 @@ from app.models.api import (
 )
 from app.repositories.search_repository import SearchRepository
 from app.rag.service import RagService
+from app.services.dialogue_export import build_dialogues_markdown
 from rolemodel_etl.loader import init_db, load_to_db
 from rolemodel_etl.parser import parse_workbook
 
@@ -241,6 +243,26 @@ def build_app(config: AppConfig | None = None) -> FastAPI:
             "validate": validate_report,
             "load": load_report,
         }
+
+    @app.post("/api/v1/admin/dialogues/export")
+    def export_dialogues(request: DialogueExportRequest) -> Response:
+        if request.date_to < request.date_from:
+            raise HTTPException(status_code=400, detail="Дата окончания не может быть раньше даты начала")
+        sessions = search_repository.list_dialogue_export_sessions(request.date_from, request.date_to)
+        markdown = build_dialogues_markdown(
+            sessions=sessions,
+            date_from=request.date_from,
+            date_to=request.date_to,
+        )
+        filename = f"dialogues_{request.date_from.isoformat()}_{request.date_to.isoformat()}.md"
+        return Response(
+            content=markdown.encode("utf-8"),
+            media_type="text/markdown; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "X-Dialogues-Count": str(len(sessions)),
+            },
+        )
 
     return app
 

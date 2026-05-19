@@ -309,7 +309,8 @@
         box-shadow: none;
       }
 
-      .feedback-panel {
+      .feedback-panel,
+      .export-panel {
         margin-top: 12px;
         padding: 14px;
         border-radius: 22px;
@@ -318,15 +319,44 @@
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.24);
       }
 
-      .feedback-panel[hidden] {
+      .feedback-panel[hidden],
+      .export-panel[hidden] {
         display: none;
       }
 
-      .feedback-label {
+      .feedback-label,
+      .export-label {
         display: block;
         margin: 0 0 8px;
         font-size: 13px;
         color: var(--ink-soft);
+      }
+
+      .export-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .export-field {
+        min-width: 0;
+      }
+
+      .export-input {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.72);
+        background: rgba(255,255,255,0.72);
+        color: var(--ink);
+        outline: none;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.42);
+      }
+
+      .export-input:focus {
+        border-color: rgba(27, 108, 255, 0.42);
+        box-shadow: 0 0 0 3px rgba(27, 108, 255, 0.08);
       }
 
       .feedback-textarea {
@@ -347,7 +377,8 @@
         box-shadow: 0 0 0 3px rgba(27, 108, 255, 0.08);
       }
 
-      .feedback-actions {
+      .feedback-actions,
+      .export-actions {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -357,7 +388,8 @@
       }
 
       .feedback-status,
-      .upload-status {
+      .upload-status,
+      .export-status {
         min-height: 18px;
         margin-top: 8px;
         font-size: 12px;
@@ -365,11 +397,13 @@
       }
 
       .feedback-status.error,
-      .upload-status.error {
+      .upload-status.error,
+      .export-status.error {
         color: #b93a3a;
       }
 
-      .upload-status.success {
+      .upload-status.success,
+      .export-status.success {
         color: #1f7a4d;
       }
 
@@ -936,6 +970,10 @@
         .button-grid {
           grid-template-columns: 1fr;
         }
+
+        .export-form {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -960,10 +998,28 @@
                 </div>
                 <button class="ghost-button" id="upload-model" type="button">Загрузить файл</button>
                 <input id="upload-model-input" type="file" accept=".xlsx" hidden>
+                <button class="ghost-button" id="export-dialogues" type="button">Выгрузка</button>
                 <button class="ghost-button" id="new-chat" type="button">Новый чат</button>
               </div>
             </div>
             <div class="upload-status" id="upload-status" aria-live="polite"></div>
+            <div class="export-panel" id="export-panel" hidden>
+              <div class="export-form">
+                <div class="export-field">
+                  <label class="export-label" for="export-date-from">Дата с</label>
+                  <input class="export-input" id="export-date-from" type="date">
+                </div>
+                <div class="export-field">
+                  <label class="export-label" for="export-date-to">Дата по</label>
+                  <input class="export-input" id="export-date-to" type="date">
+                </div>
+              </div>
+              <div class="export-actions">
+                <button class="ghost-button" id="export-cancel" type="button">Скрыть</button>
+                <button class="choice-button feedback-save" id="export-run" type="button">Скачать MD</button>
+              </div>
+              <div class="export-status" id="export-status" aria-live="polite"></div>
+            </div>
             <div class="feedback-panel" id="feedback-panel" hidden>
               <label class="feedback-label" for="feedback-comment">Если ожидали другое поведение, опишите его здесь.</label>
               <textarea
@@ -1043,6 +1099,13 @@
       const uploadModelEl = document.getElementById("upload-model");
       const uploadModelInputEl = document.getElementById("upload-model-input");
       const uploadStatusEl = document.getElementById("upload-status");
+      const exportDialoguesEl = document.getElementById("export-dialogues");
+      const exportPanelEl = document.getElementById("export-panel");
+      const exportDateFromEl = document.getElementById("export-date-from");
+      const exportDateToEl = document.getElementById("export-date-to");
+      const exportRunEl = document.getElementById("export-run");
+      const exportCancelEl = document.getElementById("export-cancel");
+      const exportStatusEl = document.getElementById("export-status");
       const sessionBadgeEl = document.getElementById("session-badge");
       const contextChipsEl = document.getElementById("context-chips");
       const contextTrayEl = document.querySelector(".context-tray");
@@ -1098,6 +1161,9 @@
         inputEl.setAttribute("aria-busy", String(nextState));
         newChatEl.disabled = nextState;
         uploadModelEl.disabled = nextState;
+        exportDialoguesEl.disabled = nextState;
+        exportRunEl.disabled = nextState;
+        exportCancelEl.disabled = nextState;
         feedbackUpEl.disabled = nextState || !sessionId;
         feedbackDownEl.disabled = nextState || !sessionId;
         feedbackSaveEl.disabled = nextState || !sessionId;
@@ -1155,6 +1221,28 @@
         uploadStatusEl.textContent = text || "";
         uploadStatusEl.classList.toggle("error", status === "error");
         uploadStatusEl.classList.toggle("success", status === "success");
+      }
+
+      function setExportStatus(text, status = "info") {
+        exportStatusEl.textContent = text || "";
+        exportStatusEl.classList.toggle("error", status === "error");
+        exportStatusEl.classList.toggle("success", status === "success");
+      }
+
+      function setExportPanelVisible(nextVisible) {
+        exportPanelEl.hidden = !nextVisible;
+      }
+
+      function todayIsoDate() {
+        const now = new Date();
+        const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+        return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
+      }
+
+      function ensureExportDates() {
+        const today = todayIsoDate();
+        if (!exportDateFromEl.value) exportDateFromEl.value = today;
+        if (!exportDateToEl.value) exportDateToEl.value = exportDateFromEl.value || today;
       }
 
       function setFeedbackPanelVisible(nextVisible) {
@@ -1769,6 +1857,82 @@
         }
       }
 
+      function filenameFromContentDisposition(headerValue, fallbackName) {
+        const header = String(headerValue || "");
+        const utfMatch = header.match(/filename\\*=UTF-8''([^;]+)/i);
+        if (utfMatch) {
+          try {
+            return decodeURIComponent(utfMatch[1]);
+          } catch (error) {
+            return utfMatch[1];
+          }
+        }
+        const plainMatch = header.match(/filename=\"?([^\";]+)\"?/i);
+        return plainMatch ? plainMatch[1] : fallbackName;
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      async function exportDialogues() {
+        if (isSending) return;
+        ensureExportDates();
+        const dateFrom = exportDateFromEl.value;
+        const dateTo = exportDateToEl.value;
+        if (!dateFrom || !dateTo) {
+          setExportStatus("Укажите обе даты.", "error");
+          return;
+        }
+        if (dateTo < dateFrom) {
+          setExportStatus("Дата окончания не может быть раньше даты начала.", "error");
+          return;
+        }
+        setBusy(true);
+        setExportStatus("Формирую Markdown-файл...");
+        try {
+          const response = await fetchWithTimeout(apiUrl("/admin/dialogues/export"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ date_from: dateFrom, date_to: dateTo })
+          }, 120000);
+          if (!response.ok) {
+            let detail = `HTTP ${response.status}`;
+            try {
+              const payload = await response.json();
+              if (payload && payload.detail) {
+                detail = typeof payload.detail === "string" ? payload.detail : JSON.stringify(payload.detail);
+              }
+            } catch (error) {
+              // keep generic detail
+            }
+            throw new Error(detail);
+          }
+          const blob = await response.blob();
+          const filename = filenameFromContentDisposition(
+            response.headers.get("Content-Disposition"),
+            `dialogues_${dateFrom}_${dateTo}.md`
+          );
+          downloadBlob(blob, filename);
+          const count = response.headers.get("X-Dialogues-Count");
+          setExportStatus(`Выгрузка сформирована${count ? `: ${count} сессий` : ""}.`, "success");
+        } catch (error) {
+          setExportStatus(
+            `Не удалось сформировать выгрузку. ${error && error.message ? error.message : "Повторите попытку позже."}`,
+            "error"
+          );
+        } finally {
+          setBusy(false);
+        }
+      }
+
       async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
         const controller = new AbortController();
         const timerId = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -1795,6 +1959,18 @@
       uploadModelInputEl.addEventListener("change", () => {
         const file = uploadModelInputEl.files && uploadModelInputEl.files[0];
         if (file) uploadRoleModelFile(file);
+      });
+      exportDialoguesEl.addEventListener("click", () => {
+        if (isSending) return;
+        ensureExportDates();
+        setExportPanelVisible(exportPanelEl.hidden);
+        setExportStatus("");
+      });
+      exportRunEl.addEventListener("click", exportDialogues);
+      exportCancelEl.addEventListener("click", () => {
+        if (isSending) return;
+        setExportPanelVisible(false);
+        setExportStatus("");
       });
       feedbackUpEl.addEventListener("click", async () => {
         if (isSending) return;
