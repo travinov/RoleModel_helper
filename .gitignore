@@ -18,3 +18,6 @@ Doc/backups/
 # Logs / local dumps
 *.log
 *.tmp
+
+# Local dialogue exports can contain user messages, feedback, and internal data.
+Doc/exports/
