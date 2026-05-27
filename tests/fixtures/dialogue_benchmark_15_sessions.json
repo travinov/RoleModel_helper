@@ -137,7 +137,7 @@
           "expect": {
             "answer_type": "INSTRUCTION_LOOKUP",
             "conversation_phase": "ANSWER_INSTRUCTION",
-            "instruction_mode_any_of": ["INLINE_DOC", "RAG"],
+            "instruction_mode_any_of": ["INLINE_DOC"],
             "citations_min": 1
           }
         },

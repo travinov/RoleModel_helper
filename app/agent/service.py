@@ -23,8 +23,8 @@ from app.models.api import (
 )
 from app.models.domain import SearchAnswer, ToolAttempt, TurnInterpretation
 from app.repositories.search_repository import SearchRepository
-from app.rag.service import RagService
 from app.services.gigachat import GigaChatClient
+from app.services.instruction_answer import StaticInstructionAnswerService
 from app.services.text import normalize_text, similarity
 
 from ..config import AppConfig
@@ -86,12 +86,12 @@ class ChatAgent:
         self,
         config: AppConfig,
         search_repository: Optional[SearchRepository] = None,
-        rag_service: Optional[RagService] = None,
+        instruction_answer_service: Optional[StaticInstructionAnswerService] = None,
         gigachat: Optional[GigaChatClient] = None,
     ) -> None:
         self.config = config
         self.search_repository = search_repository or SearchRepository(config)
-        self.rag_service = rag_service or RagService(config)
+        self.instruction_answer_service = instruction_answer_service or StaticInstructionAnswerService(config)
         self.gigachat = gigachat or GigaChatClient(config)
         self.policy_service = ConversationPolicyService(self.search_repository)
         self.turn_planner = TurnPlanner()
@@ -99,7 +99,7 @@ class ChatAgent:
         self.state_reducer = StateReducer(self.search_repository)
         self.system_discovery_service = SystemDiscoveryService(self.search_repository)
         self.role_discovery_service = RoleDiscoveryService(self.search_repository)
-        self.instruction_service = InstructionService(self.search_repository, self.rag_service)
+        self.instruction_service = InstructionService(self.search_repository, self.instruction_answer_service)
         self._response_prefixes: dict[str, str] = {}
 
     def start_session(self) -> tuple[str, str]:
@@ -2705,7 +2705,7 @@ class ChatAgent:
         citations = []
         support_recommendation = None
         if access_level == 2:
-            instruction_result = self.rag_service.answer_from_inline_doc(
+            instruction_result = self.instruction_answer_service.answer_from_static_instruction(
                 f"{raw_text} {match['system_name']} {match['entitlement_name']}",
                 context={
                     "intent_type": "ROLE_ACQUISITION",

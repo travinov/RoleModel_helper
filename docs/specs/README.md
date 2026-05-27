@@ -8,7 +8,7 @@ Specs should reference the current implementation areas when relevant:
 - `rolemodel_etl/`: Excel snapshot parsing/loading and workbook validation.
 - `app/`: FastAPI endpoints, chat agent flow, slot/state orchestration.
 - `app/models/domain.py` and `app/models/api.py`: canonical state, pending questions, response payloads.
-- `app/rag/`: instruction ingestion/search/answer paths.
+- `app/services/static_instruction.py` and `app/services/instruction_answer.py`: static instruction upload and answer paths.
 - `rolemodel_etl/sql/schema.sql`: PostgreSQL schema and invariants.
 - `tests/`: targeted unittests and dialogue benchmark/replay fixtures.
 
@@ -25,7 +25,7 @@ Mark applicable categories in each spec:
 - [ ] PostgreSQL schema/data contract/query behavior.
 - [ ] Chat API contract (`ChatMessageResponse`, pending question payloads, intent fields).
 - [ ] Agent state machine/slots/phase transitions/context shifts.
-- [ ] RAG ingestion/retrieval/citation behavior.
+- [ ] Static instruction upload/answer behavior.
 - [ ] Dialogue benchmark/replay expectations.
 - [ ] Operational checks (snapshot activation, ETL run status, error accounting).
 
@@ -40,7 +40,7 @@ Call out which invariants are touched; unchanged invariants should be explicitly
 - Slot state/pending question fields remain structurally compatible with `app/models/domain.py` and `app/models/api.py`.
 - `state_revision` remains monotonic for session state updates.
 - Intent/phase transitions remain explicit and replayable (no hidden side channels).
-- Instruction answers preserve citation contract when RAG/inline mode is used.
+- Instruction answers preserve citation payload compatibility when static instruction mode is used.
 
 ## Spec Template
 
@@ -65,7 +65,7 @@ Copy into `docs/specs/YYYY-MM-DD-short-name.md`.
 - [ ] PostgreSQL schema/data contract/query behavior
 - [ ] Chat API contract
 - [ ] Agent state machine/slots/phase transitions
-- [ ] RAG ingestion/retrieval/citation behavior
+- [ ] Static instruction upload/answer behavior
 - [ ] Dialogue benchmark/replay expectations
 - [ ] Operational checks
 
@@ -144,9 +144,9 @@ Run only the narrow checks for changed scope, then broaden if needed:
 /usr/bin/python3 -m unittest tests.test_dialogue_export
 ```
 
-- RAG PPTX ingestion/extraction path:
+- Static instruction upload/answer behavior:
 ```bash
-/usr/bin/python3 -m unittest tests.test_rag_pptx
+/usr/bin/python3 -m unittest tests.test_static_instruction
 ```
 
 - Full regression (only when scope justifies):

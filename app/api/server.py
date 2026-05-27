@@ -15,8 +15,6 @@ from app.agent.service import ChatAgent
 from app.models.api import (
     AliasUpsertRequest,
     DialogueExportRequest,
-    RagIngestRequest,
-    RagSourceCreateRequest,
     SessionFeedbackPayload,
     SessionFeedbackRequest,
     SessionCreateResponse,
@@ -24,8 +22,8 @@ from app.models.api import (
     UserMessageRequest,
 )
 from app.repositories.search_repository import SearchRepository
-from app.rag.service import RagService
 from app.services.dialogue_export import build_dialogues_markdown
+from app.services.instruction_answer import StaticInstructionAnswerService
 from app.services.static_instruction import save_instruction_upload
 from rolemodel_etl.loader import init_db, load_to_db
 from rolemodel_etl.parser import parse_workbook
@@ -110,8 +108,8 @@ def build_app(config: AppConfig | None = None) -> FastAPI:
     init_db(app_config.db)
     app = FastAPI(title="RoleModel Chat Agent", version="0.1.0")
 
-    agent = ChatAgent(app_config)
-    rag_service = RagService(app_config)
+    instruction_answer_service = StaticInstructionAnswerService(app_config)
+    agent = ChatAgent(app_config, instruction_answer_service=instruction_answer_service)
     search_repository = SearchRepository(app_config)
 
     @app.get("/api/v1/health")
@@ -120,8 +118,7 @@ def build_app(config: AppConfig | None = None) -> FastAPI:
             "status": "ok",
             "gigachat_enabled": app_config.gigachat_enabled,
             "gigachat_intent": app_config.gigachat_use_for_intent,
-            "gigachat_chunking": app_config.gigachat_use_for_chunking,
-            "gigachat_rag_answer": app_config.gigachat_use_for_rag_answer,
+            "gigachat_instruction_answer": app_config.gigachat_use_for_instruction_answer,
         }
 
     @app.get("/", response_class=HTMLResponse)
@@ -169,32 +166,6 @@ def build_app(config: AppConfig | None = None) -> FastAPI:
         search_repository.upsert_alias(request.system_id, request.alias_text, request.alias_source)
         return {"status": "ok"}
 
-    @app.post("/api/v1/admin/rag/sources")
-    def create_rag_source(request: RagSourceCreateRequest) -> dict:
-        return rag_service.register_source(
-            title=request.title,
-            file_path=request.file_path,
-            source_type=request.source_type,
-            system_id=request.system_id,
-        )
-
-    @app.post("/api/v1/admin/rag/ingest")
-    def ingest_rag(request: RagIngestRequest) -> dict:
-        return rag_service.ingest_source(
-            source_id=request.source_id,
-            file_path=request.file_path,
-            title=request.title,
-            source_type=request.source_type,
-            system_id=request.system_id,
-        )
-
-    @app.get("/api/v1/admin/rag/sources/{source_id}")
-    def inspect_rag_source(source_id: int) -> dict:
-        source = rag_service.inspect_source(source_id)
-        if not source:
-            raise HTTPException(status_code=404, detail=f"RAG source {source_id} was not found")
-        return source
-
     @app.post("/api/v1/admin/instruction/upload")
     async def upload_instruction_file(request: Request) -> dict:
         raw_name = unquote(request.headers.get("x-file-name") or "instruction.txt")
@@ -205,7 +176,7 @@ def build_app(config: AppConfig | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except OSError as exc:
             raise HTTPException(status_code=500, detail=f"Не удалось сохранить инструкцию: {exc}") from exc
-        rag_service.clear_inline_instruction_cache()
+        instruction_answer_service.clear_cache()
         return {
             "status": "SUCCESS",
             "message": "Инструкция успешно загружена.",

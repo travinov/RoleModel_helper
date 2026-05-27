@@ -241,7 +241,7 @@
             "conversation_phase": "ANSWER_INSTRUCTION",
             "instruction_mode_any_of": [
               "INLINE_DOC",
-              "RAG"
+              "INLINE_DOC"
             ],
             "citations_min": 1
           }

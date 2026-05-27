@@ -138,17 +138,3 @@ class AliasUpsertRequest(BaseModel):
     alias_text: str
     alias_source: Literal["MANUAL"] = "MANUAL"
 
-
-class RagSourceCreateRequest(BaseModel):
-    title: str
-    file_path: str
-    source_type: Literal["PPTX", "PDF", "DOCX", "HTML", "TEXT"] = "PPTX"
-    system_id: Optional[int] = None
-
-
-class RagIngestRequest(BaseModel):
-    source_id: Optional[int] = None
-    file_path: Optional[str] = None
-    title: Optional[str] = None
-    source_type: Literal["PPTX", "PDF", "DOCX", "HTML", "TEXT"] = "PPTX"
-    system_id: Optional[int] = None

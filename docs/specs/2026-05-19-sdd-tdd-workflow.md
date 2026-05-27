@@ -1,9 +1,9 @@
 # SDD/TDD Workflow For RoleModel Helper
 
 ## Context
-- Problem: changes to ETL, dialogue state, RAG, and workbook-derived access logic need a repeatable way to capture intent before code changes.
+- Problem: changes to ETL, dialogue state, static instruction behavior, and workbook-derived access logic need a repeatable way to capture intent before code changes.
 - Why now: the repository already has unittest coverage, dialogue benchmark fixtures, and an agent refactor plan, but specs need to be tied to the actual domain invariants.
-- Related files/services: `AGENTS.md`, `docs/specs/README.md`, `rolemodel_etl/`, `app/agent/`, `app/rag/`, `app/models/api.py`, `app/models/domain.py`, `tests/`, `tests/fixtures/`.
+- Related files/services: `AGENTS.md`, `docs/specs/README.md`, `rolemodel_etl/`, `app/agent/`, `app/services/`, `app/models/api.py`, `app/models/domain.py`, `tests/`, `tests/fixtures/`.
 
 ## Goal
 - Primary outcome: every non-trivial behavior change starts from a short project-specific spec and proceeds through a visible RED/GREEN TDD loop.
@@ -18,7 +18,7 @@
 - [x] PostgreSQL schema/data contract/query behavior
 - [x] Chat API contract
 - [x] Agent state machine/slots/phase transitions
-- [x] RAG ingestion/retrieval/citation behavior
+- [x] Static instruction upload/answer behavior
 - [x] Dialogue benchmark/replay expectations
 - [x] Operational checks
 
@@ -35,7 +35,7 @@
   - Keep changes small enough for targeted tests before full regression.
 - Operational constraints:
   - ETL/schema specs must include active snapshot and ETL counter verification.
-  - RAG specs must include citation behavior expectations.
+  - Static instruction specs must include citation behavior expectations.
   - Dialogue behavior specs must name fixture/report artifacts when replay coverage is required.
 
 ## Inputs / Outputs
@@ -49,16 +49,16 @@
   - ETL run status and row/error counters remain coherent.
   - Access-level semantics remain compatible with schema checks.
   - Chat state fields, pending questions, state revisions, active goals, phases, and context shifts remain API-compatible.
-  - RAG instruction answers preserve required citation behavior.
+  - Static instruction answers preserve required citation behavior.
 - Intentionally changed:
   - None for the workflow itself; future feature specs must state intentional invariant changes explicitly.
 
 ## Acceptance Criteria
 1. `AGENTS.md` tells agents to start non-trivial work from a spec and run TDD through targeted checks.
-2. `docs/specs/README.md` contains project-specific sections for ETL, DB/schema, API, agent state, RAG, benchmark/replay, and operational checks.
+2. `docs/specs/README.md` contains project-specific sections for ETL, DB/schema, API, agent state, static instruction behavior, benchmark/replay, and operational checks.
 3. A future dialogue behavior spec can directly name `conversation_phase`, `pending_question.topic`, `answer.answer_type`, `state_expect`, and `state_forbid` expectations.
 4. A future workbook behavior spec can directly require the four validation themes: AS alias resolution, accessible AS list by current profile, justification lookup, stale/missing AS rejection.
-5. Targeted test commands are documented for parser, agent, dialogue export, RAG, benchmark, and full regression scopes.
+5. Targeted test commands are documented for parser, agent, dialogue export, static instruction behavior, benchmark, and full regression scopes.
 
 ## Test Plan (TDD)
 - RED command: not applicable; this is a docs/process adoption spec with no runtime behavior change.

@@ -16,10 +16,6 @@ def _env_bool(name: str, default: bool) -> bool:
 @dataclass
 class AppConfig:
     db: DBConfig
-    embedding_dim: int = 128
-    tesseract_cmd: str = "tesseract"
-    tesseract_langs: str = "rus+eng"
-    rag_top_k: int = 5
     app_host: str = "127.0.0.1"
     app_port: int = 8000
     gigachat_auth_url: str = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
@@ -30,13 +26,11 @@ class AppConfig:
     gigachat_client_secret: str | None = None
     gigachat_access_token: str | None = None
     gigachat_chat_model: str = "GigaChat-2-Pro"
-    gigachat_chunk_model: str = "GigaChat-2-Pro"
     gigachat_timeout_sec: float = 45.0
     gigachat_verify_ssl: bool = True
     gigachat_ca_bundle: str | None = None
     gigachat_use_for_intent: bool = True
-    gigachat_use_for_chunking: bool = True
-    gigachat_use_for_rag_answer: bool = True
+    gigachat_use_for_instruction_answer: bool = True
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -49,10 +43,6 @@ class AppConfig:
                 password=os.getenv("RM_DB_PASSWORD", "rolemodel"),
                 schema=os.getenv("RM_DB_SCHEMA", "public"),
             ),
-            embedding_dim=int(os.getenv("RM_EMBEDDING_DIM", "128")),
-            tesseract_cmd=os.getenv("RM_TESSERACT_CMD", "tesseract"),
-            tesseract_langs=os.getenv("RM_TESSERACT_LANGS", "rus+eng"),
-            rag_top_k=int(os.getenv("RM_RAG_TOP_K", "5")),
             app_host=os.getenv("RM_APP_HOST", "127.0.0.1"),
             app_port=int(os.getenv("RM_APP_PORT", "8000")),
             gigachat_auth_url=os.getenv(
@@ -69,13 +59,11 @@ class AppConfig:
             gigachat_client_secret=os.getenv("RM_GIGACHAT_CLIENT_SECRET"),
             gigachat_access_token=os.getenv("RM_GIGACHAT_ACCESS_TOKEN"),
             gigachat_chat_model=os.getenv("RM_GIGACHAT_CHAT_MODEL", "GigaChat-2-Pro"),
-            gigachat_chunk_model=os.getenv("RM_GIGACHAT_CHUNK_MODEL", "GigaChat-2-Pro"),
             gigachat_timeout_sec=float(os.getenv("RM_GIGACHAT_TIMEOUT_SEC", "45")),
             gigachat_verify_ssl=_env_bool("RM_GIGACHAT_VERIFY_SSL", True),
             gigachat_ca_bundle=os.getenv("RM_GIGACHAT_CA_BUNDLE"),
             gigachat_use_for_intent=_env_bool("RM_GIGACHAT_USE_FOR_INTENT", True),
-            gigachat_use_for_chunking=_env_bool("RM_GIGACHAT_USE_FOR_CHUNKING", True),
-            gigachat_use_for_rag_answer=_env_bool("RM_GIGACHAT_USE_FOR_RAG_ANSWER", True),
+            gigachat_use_for_instruction_answer=_env_bool("RM_GIGACHAT_USE_FOR_INSTRUCTION_ANSWER", True),
         )
 
     @property

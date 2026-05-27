@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from app.agent.scenario_services import InstructionService
 from app.config import AppConfig
-from app.rag.service import RagService
+from app.services.instruction_answer import StaticInstructionAnswerService
 from rolemodel_etl.config import DBConfig
 
 
@@ -25,7 +25,7 @@ def _test_config() -> AppConfig:
             user="rolemodel",
             password="rolemodel",
         ),
-        gigachat_use_for_rag_answer=False,
+        gigachat_use_for_instruction_answer=False,
     )
 
 
@@ -43,7 +43,7 @@ def _build_test_client(config: AppConfig) -> TestClient:
     with patch("rolemodel_etl.loader.init_db"), patch("app.agent.service.ChatAgent", return_value=DummyAgent()):
         server = importlib.import_module("app.api.server")
     server.init_db = lambda db_config: None
-    server.ChatAgent = lambda app_config: DummyAgent()
+    server.ChatAgent = lambda app_config, instruction_answer_service=None: DummyAgent()
     server.SearchRepository = DummySearchRepository
     return TestClient(server.build_app(config))
 
@@ -108,21 +108,19 @@ class StaticInstructionUploadTestCase(unittest.TestCase):
 
 
 class StaticInstructionServiceTestCase(unittest.TestCase):
-    def test_static_instruction_pack_uses_text_file_without_pptx_fallback(self) -> None:
+    def test_static_instruction_pack_uses_text_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             static_path = Path(tmpdir) / "static_instruction.txt"
             static_path.write_text("Шаг 1. Откройте Мои доступы.\nШаг 2. Выберите ролевую модель.", encoding="utf-8")
-            with patch.dict(os.environ, {"RM_STATIC_INSTRUCTION_PATH": str(static_path)}, clear=False), patch(
-                "app.rag.service.extract_pptx_document", side_effect=AssertionError("PPTX fallback must not be used")
-            ):
-                service = RagService(_test_config())
-                pack = service.load_inline_instruction_pack()
-                answer = service.answer_from_inline_doc("как получить доступ")
+            with patch.dict(os.environ, {"RM_STATIC_INSTRUCTION_PATH": str(static_path)}, clear=False):
+                service = StaticInstructionAnswerService(_test_config())
+                pack = service.load_instruction_pack()
+                answer = service.answer_from_static_instruction("как получить доступ")
 
         self.assertIsNotNone(pack)
         assert pack is not None
         self.assertEqual(pack["title"], "Статичная инструкция")
-        self.assertEqual(pack["slides_count"], 1)
+        self.assertEqual(pack["sections_count"], 1)
         self.assertGreaterEqual(len(pack["sections"]), 1)
         self.assertIsNotNone(answer)
         assert answer is not None
@@ -130,22 +128,16 @@ class StaticInstructionServiceTestCase(unittest.TestCase):
         self.assertIn("Мои доступы", answer["summary_text"])
         self.assertEqual(answer["citations"][0].source_title, "Статичная инструкция")
 
-    def test_instruction_service_does_not_call_rag_when_static_instruction_missing(self) -> None:
-        class MissingStaticRag:
-            def answer_from_inline_doc(self, query_text: str, context=None) -> None:
+    def test_instruction_service_returns_clear_message_when_static_instruction_missing(self) -> None:
+        class MissingStaticInstruction:
+            def answer_from_static_instruction(self, query_text: str, context=None) -> None:
                 return None
-
-            def search_instructions(self, query_text: str):
-                raise AssertionError("RAG search must not be used for instruction lookup")
-
-            def answer_with_rag(self, query_text: str, retrieved_chunks, answer_style: str = "steps"):
-                raise AssertionError("RAG answer must not be used for instruction lookup")
 
         class SearchRepo:
             def log_tool_call(self, *args, **kwargs) -> None:
-                raise AssertionError("RAG tool calls must not be logged for static instruction lookup")
+                raise AssertionError("tool calls must not be logged for static instruction lookup")
 
-        result = InstructionService(SearchRepo(), MissingStaticRag()).answer(
+        result = InstructionService(SearchRepo(), MissingStaticInstruction()).answer(
             session_id="s1",
             state={},
             raw_text="как получить доступ",
