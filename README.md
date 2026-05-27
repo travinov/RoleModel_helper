@@ -10,7 +10,6 @@ Server-side chat assistant for role/access lookup on top of:
 - `rolemodel_etl/` - ETL from Excel into PostgreSQL.
 - `app/` - FastAPI backend, server-side agent, static instruction handling, minimal chat UI.
 - `tests/` - unit and integration-style tests for parser, agent logic, instruction upload, and operational checks.
-- `docker-compose.yml` - local PostgreSQL.
 
 ## Install
 
@@ -55,20 +54,6 @@ export RM_GIGACHAT_VERIFY_SSL=true
 # export RM_GIGACHAT_CA_BUNDLE="/absolute/path/to/ca.pem"
 export RM_GIGACHAT_USE_FOR_INTENT=true
 export RM_GIGACHAT_USE_FOR_INSTRUCTION_ANSWER=true
-```
-
-## Local DB
-
-Start PostgreSQL:
-
-```bash
-docker compose up -d postgres
-```
-
-Stop it:
-
-```bash
-docker compose down
 ```
 
 ## ETL
@@ -127,8 +112,8 @@ bash scripts/install_rolemodel_helper_server.sh
 ```
 
 The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
-`bdtest`, schema `rolemodel_helper`. It does not start local Docker and does not
-require the PostgreSQL `vector` extension.
+`bdtest`, schema `rolemodel_helper`. It does not require local container runtime
+or the PostgreSQL `vector` extension.
 
 Open the minimal chat UI:
 

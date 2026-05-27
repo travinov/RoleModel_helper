@@ -26,7 +26,6 @@ class NoRagSurfaceTest(unittest.TestCase):
         active_files = [
             *list((REPO_ROOT / "app").rglob("*.py")),
             REPO_ROOT / "README.md",
-            REPO_ROOT / "docker-compose.yml",
         ]
         for path in active_files:
             text = path.read_text(encoding="utf-8").lower()
@@ -34,6 +33,23 @@ class NoRagSurfaceTest(unittest.TestCase):
             self.assertNotIn("ragservice", text, str(path))
             self.assertNotIn("ragrepository", text, str(path))
             self.assertNotIn("pgvector", text, str(path))
+
+    def test_corporate_archive_has_no_docker_dependency(self) -> None:
+        self.assertFalse((REPO_ROOT / "docker-compose.yml").exists())
+
+        files = [
+            REPO_ROOT / "README.md",
+            REPO_ROOT / "start_rolemodel_server.command",
+            REPO_ROOT / "scripts" / "start_rolemodel_server.applescript",
+            REPO_ROOT / "scripts" / "install_rolemodel_helper_server.sh",
+        ]
+        for path in files:
+            if not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8").lower()
+            self.assertNotIn("docker", text, str(path))
+            self.assertNotIn("docker-compose", text, str(path))
+            self.assertNotIn("docker compose", text, str(path))
 
 
 if __name__ == "__main__":

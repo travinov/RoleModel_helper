@@ -3,7 +3,7 @@
 ## Context
 - Problem: instruction answers now use `Doc/static_instruction.txt`, but the repository still creates RAG tables and requires the PostgreSQL `vector` extension.
 - Why now: the corporate PostgreSQL server should not need `pgvector` for a static-instruction deployment.
-- Related files/services: `rolemodel_etl/sql/schema.sql`, `app/api/server.py`, `app/agent/service.py`, `app/agent/scenario_services.py`, `app/services/static_instruction.py`, `README.md`, `docker-compose.yml`, tests.
+- Related files/services: `rolemodel_etl/sql/schema.sql`, `app/api/server.py`, `app/agent/service.py`, `app/agent/scenario_services.py`, `app/services/static_instruction.py`, `README.md`, tests.
 
 ## Goal
 - Remove active RAG ingestion/search code, RAG admin API, RAG tables, and `vector`/`pgvector` requirements.
@@ -31,7 +31,7 @@
 - Technical constraints:
   - `CREATE EXTENSION vector`, `VECTOR(128)`, `::vector`, and vector indexes are absent from schema/code.
   - Active app code no longer imports `app.rag` or `RagRepository`.
-  - Local Docker uses plain PostgreSQL, not `pgvector`.
+  - The corporate archive does not require local container runtime.
 - Operational constraints:
   - Corporate installer continues to use external PostgreSQL `10.135.162.149:5433`.
 
