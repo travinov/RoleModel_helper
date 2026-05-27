@@ -17,7 +17,7 @@ ConversationPhase = Literal[
 ]
 
 SystemResolutionMode = Literal["DIRECT", "BROWSE"]
-InstructionMode = Literal["INLINE_DOC", "RAG"]
+InstructionMode = Literal["INLINE_DOC"]
 ContextShift = Literal[
     "NONE",
     "CHANGE_SYSTEM_FOCUS",

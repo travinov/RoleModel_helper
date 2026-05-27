@@ -2716,12 +2716,11 @@ class ChatAgent:
                 instruction = instruction_result["instruction"]
                 citations = instruction_result["citations"]
             else:
-                retrieved = self.rag_service.search_instructions(
-                    f"{raw_text} {match['system_name']} {match['entitlement_name']}"
+                instruction = (
+                    "Инструкция не загружена. "
+                    "Загрузите файл .rtf или .txt через интерфейс загрузки инструкции."
                 )
-                rag_answer = self.rag_service.answer_with_rag(raw_text, retrieved, answer_style="steps")
-                instruction = rag_answer["instruction"]
-                citations = rag_answer["citations"]
+                citations = []
         else:
             support_recommendation = SUPPORT_RECOMMENDATION
         answer = SearchAnswer(
