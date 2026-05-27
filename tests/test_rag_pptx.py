@@ -52,14 +52,16 @@ class RagPptxExtractionTestCase(unittest.TestCase):
         self.assertGreaterEqual(len(chunks), 8)
         self.assertEqual(len({chunk["slide_no"] for chunk in chunks if chunk.get("slide_no")}), 5)
 
-    def test_small_doc_inline_pack_is_available_for_presentation(self) -> None:
+    def test_static_instruction_pack_is_available_for_default_text_source(self) -> None:
         service = RagService(self.config)
-        pack = service.load_inline_instruction_pack(file_path=str(self.presentation))
+        static_instruction = Path(__file__).resolve().parents[1] / "Doc" / "static_instruction.txt"
+        pack = service.load_inline_instruction_pack(file_path=str(static_instruction))
         self.assertIsNotNone(pack)
         assert pack is not None
-        self.assertEqual(pack["slides_count"], 5)
+        self.assertEqual(pack["title"], "Статичная инструкция")
+        self.assertEqual(pack["slides_count"], 1)
         self.assertLessEqual(pack["text_length"], 15000)
-        self.assertGreaterEqual(len(pack["sections"]), 5)
+        self.assertEqual(len(pack["sections"]), 1)
 
 
 if __name__ == "__main__":

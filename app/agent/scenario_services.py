@@ -273,37 +273,13 @@ class InstructionService:
                 instruction_mode="INLINE_DOC",
             )
 
-        retrieved = self.rag_service.search_instructions(query_text)
-        self.search_repository.log_tool_call(
-            session_id,
-            ToolAttempt(
-                tool_name="search_instructions",
-                attempt_no=1,
-                input_payload={"query_text": query_text},
-                result_status="success",
-                result_summary=f"{len(retrieved)} chunks",
-            ),
-            {"chunks": [chunk.__dict__ for chunk in retrieved]},
-        )
-        if not retrieved or float(retrieved[0].score) < INSTRUCTION_SCORE_THRESHOLD:
-            return InstructionResult(
-                answer=SearchAnswer(
-                    answer_type="INSTRUCTION_LOOKUP",
-                    summary_text="Подходящая инструкция в базе не найдена.",
-                    instruction="Подходящая инструкция в базе не найдена.",
-                    citations=[],
-                ),
-                instruction_mode="RAG",
-            )
-
-        rag_answer = self.rag_service.answer_with_rag(raw_text, retrieved, answer_style="steps")
-        summary_text = rag_answer["summary_text"]
+        summary_text = "Инструкция не загружена. Загрузите файл .rtf или .txt через интерфейс загрузки инструкции."
         return InstructionResult(
             answer=SearchAnswer(
                 answer_type="INSTRUCTION_LOOKUP",
                 summary_text=summary_text,
                 instruction=summary_text,
-                citations=rag_answer["citations"],
+                citations=[],
             ),
-            instruction_mode="RAG",
+            instruction_mode="INLINE_DOC",
         )

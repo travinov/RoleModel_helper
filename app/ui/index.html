@@ -1004,6 +1004,8 @@
                 </div>
                 <button class="ghost-button" id="upload-model" type="button">Загрузить файл</button>
                 <input id="upload-model-input" type="file" accept=".xlsx" hidden>
+                <button class="ghost-button" id="upload-instruction" type="button">Загрузить инструкцию</button>
+                <input id="upload-instruction-input" type="file" accept=".rtf,.txt" hidden>
                 <button class="ghost-button" id="export-dialogues" type="button">Выгрузка</button>
                 <button class="ghost-button" id="new-chat" type="button">Новый чат</button>
               </div>
@@ -1104,6 +1106,8 @@
       const newChatEl = document.getElementById("new-chat");
       const uploadModelEl = document.getElementById("upload-model");
       const uploadModelInputEl = document.getElementById("upload-model-input");
+      const uploadInstructionEl = document.getElementById("upload-instruction");
+      const uploadInstructionInputEl = document.getElementById("upload-instruction-input");
       const uploadStatusEl = document.getElementById("upload-status");
       const exportDialoguesEl = document.getElementById("export-dialogues");
       const exportPanelEl = document.getElementById("export-panel");
@@ -1143,8 +1147,7 @@
       };
 
       const modeLabels = {
-        INLINE_DOC: "Inline doc",
-        RAG: "RAG"
+        INLINE_DOC: "Static instruction"
       };
 
       function syncViewportHeight() {
@@ -1167,6 +1170,7 @@
         inputEl.setAttribute("aria-busy", String(nextState));
         newChatEl.disabled = nextState;
         uploadModelEl.disabled = nextState;
+        uploadInstructionEl.disabled = nextState;
         exportDialoguesEl.disabled = nextState;
         exportRunEl.disabled = nextState;
         exportCancelEl.disabled = nextState;
@@ -1935,6 +1939,60 @@
         }
       }
 
+      function buildInstructionUploadSummary(payload) {
+        const lines = [payload.message || "Инструкция загружена."];
+        if (payload.text_length) {
+          lines.push(`Символов: ${payload.text_length}, строк: ${payload.lines_count || 0}.`);
+        }
+        if (payload.static_instruction_path) {
+          lines.push(`Активный файл: ${payload.static_instruction_path}`);
+        }
+        return lines.join("\n");
+      }
+
+      async function uploadInstructionFile(file) {
+        if (!file || isSending) return;
+        const lowerName = file.name.toLowerCase();
+        if (!lowerName.endsWith(".rtf") && !lowerName.endsWith(".txt")) {
+          setUploadStatus("Можно загрузить только файл .rtf или .txt.", "error");
+          return;
+        }
+        setBusy(true);
+        setUploadStatus(`Загружаю инструкцию ${file.name}...`);
+        try {
+          const response = await fetchWithTimeout(apiUrl("/admin/instruction/upload"), {
+            method: "POST",
+            headers: {
+              "Content-Type": lowerName.endsWith(".rtf") ? "application/rtf" : "text/plain; charset=utf-8",
+              "X-File-Name": encodeURIComponent(file.name)
+            },
+            body: file
+          }, 60000);
+          let payload = null;
+          try {
+            payload = await response.json();
+          } catch (error) {
+            payload = null;
+          }
+          if (!response.ok) {
+            const detail = payload && payload.detail ? payload.detail : `HTTP ${response.status}`;
+            throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+          }
+          setUploadStatus("Инструкция загружена и стала активной.", "success");
+          appendMessage("assistant", buildInstructionUploadSummary(payload || {}), null);
+        } catch (error) {
+          setUploadStatus("Не удалось загрузить инструкцию.", "error");
+          appendMessage(
+            "assistant",
+            `Не удалось загрузить инструкцию. ${error && error.message ? error.message : "Повторите попытку позже."}`,
+            null
+          );
+        } finally {
+          uploadInstructionInputEl.value = "";
+          setBusy(false);
+        }
+      }
+
       function filenameFromContentDisposition(headerValue, fallbackName) {
         const header = String(headerValue || "");
         const utfMatch = header.match(/filename\\*=UTF-8''([^;]+)/i);
@@ -2043,6 +2101,14 @@
       uploadModelInputEl.addEventListener("change", () => {
         const file = uploadModelInputEl.files && uploadModelInputEl.files[0];
         if (file) uploadRoleModelFile(file);
+      });
+      uploadInstructionEl.addEventListener("click", () => {
+        if (isSending) return;
+        uploadInstructionInputEl.click();
+      });
+      uploadInstructionInputEl.addEventListener("change", () => {
+        const file = uploadInstructionInputEl.files && uploadInstructionInputEl.files[0];
+        if (file) uploadInstructionFile(file);
       });
       exportDialoguesEl.addEventListener("click", () => {
         if (isSending) return;

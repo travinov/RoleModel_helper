@@ -9,6 +9,7 @@ from app.models.domain import RetrievedChunk
 from app.repositories.rag_repository import RagRepository
 from app.services.embeddings import embed_text
 from app.services.gigachat import GigaChatClient
+from app.services.static_instruction import STATIC_INSTRUCTION_TITLE, read_static_instruction, static_instruction_path
 from app.services.text import normalize_text, similarity
 
 from ..config import AppConfig
@@ -304,70 +305,38 @@ class RagService:
             for row in rows
         ]
 
+    def clear_inline_instruction_cache(self) -> None:
+        self._inline_pack_cache.clear()
+
     def load_inline_instruction_pack(
         self,
         source_id: Optional[int] = None,
         file_path: Optional[str] = None,
     ) -> Optional[dict]:
-        source_title = "Памятка по работе с ролевой моделью Риск-менеджера"
-        candidate_path: Optional[Path] = None
         if source_id is not None:
-            source = self.repository.get_source(source_id)
-            if not source:
-                return None
-            candidate_path = Path(str(source["file_path"]))
-            source_title = str(source.get("title") or source_title)
-        elif file_path:
-            candidate_path = Path(file_path)
-        else:
-            candidate_path = (
-                Path(__file__).resolve().parents[2]
-                / "Doc"
-                / "Памятка по работе с ролевой моделью Риск-менеджера.pptx"
-            )
-        if not candidate_path.exists():
+            return None
+        candidate_path = Path(file_path) if file_path else static_instruction_path()
+        text = read_static_instruction(candidate_path)
+        if not text:
             return None
 
-        cache_key = str(candidate_path.resolve())
+        cache_key = f"{candidate_path.resolve()}:{candidate_path.stat().st_mtime_ns}"
         cached = self._inline_pack_cache.get(cache_key)
         if cached:
             return cached
-
-        extracted = extract_pptx_document(
-            file_path=candidate_path,
-            tesseract_cmd=self.config.tesseract_cmd,
-            tesseract_langs=self.config.tesseract_langs,
-        )
-        slides_count = int(extracted["document_metadata"].get("slides_count") or len(extracted["slides"]))
-        sections: list[dict] = []
-        total_length = 0
-        for slide in extracted["slides"]:
-            parts = [str(slide.get("slide_text") or "").strip()]
-            parts.extend(
-                str(image.get("summary_text") or "").strip()
-                for image in slide.get("images") or []
-                if str(image.get("summary_text") or "").strip()
-            )
-            section_text = "\n".join(part for part in parts if part).strip()
-            if not section_text:
-                continue
-            total_length += len(section_text)
-            sections.append(
-                {
-                    "slide_no": int(slide["slide_no"]),
-                    "chunk_text": section_text,
-                    "citation_label": f"{source_title}, слайд {slide['slide_no']}",
-                    "locator_text": f"слайд {slide['slide_no']}",
-                }
-            )
-        if slides_count > 10 or total_length > 15000:
-            return None
         pack = {
-            "title": source_title,
+            "title": STATIC_INSTRUCTION_TITLE,
             "file_path": str(candidate_path),
-            "slides_count": slides_count,
-            "text_length": total_length,
-            "sections": sections,
+            "slides_count": 1,
+            "text_length": len(text),
+            "sections": [
+                {
+                    "slide_no": 1,
+                    "chunk_text": text,
+                    "citation_label": STATIC_INSTRUCTION_TITLE,
+                    "locator_text": "статичный текст",
+                }
+            ],
         }
         self._inline_pack_cache[cache_key] = pack
         return pack
@@ -391,7 +360,10 @@ class RagService:
             )
             if str(part or "").strip()
         ).strip()
-        selected = self._select_inline_sections(pack, retrieval_query)
+        if pack.get("title") == STATIC_INSTRUCTION_TITLE:
+            selected = self._static_instruction_chunks(pack)
+        else:
+            selected = self._select_inline_sections(pack, retrieval_query)
         if not selected:
             selected = self._select_inline_sections(pack, query_text)
         if not selected:
@@ -406,6 +378,24 @@ class RagService:
             "summary_text": summary_text,
             "instruction_mode": "INLINE_DOC",
         }
+
+    def _static_instruction_chunks(self, pack: dict) -> list[RetrievedChunk]:
+        chunks: list[RetrievedChunk] = []
+        for section in pack.get("sections") or []:
+            chunks.append(
+                RetrievedChunk(
+                    chunk_id=-1,
+                    source_id=0,
+                    source_title=pack["title"],
+                    slide_no=None,
+                    chunk_type="STATIC_TEXT",
+                    chunk_text=str(section["chunk_text"]),
+                    score=1.0,
+                    citation_label=str(section["citation_label"]),
+                    locator_text=str(section["locator_text"]),
+                )
+            )
+        return chunks
 
     def answer_with_rag(self, query_text: str, retrieved_chunks: list[RetrievedChunk], answer_style: str = "concise") -> dict:
         if not retrieved_chunks:

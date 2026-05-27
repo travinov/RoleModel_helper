@@ -26,6 +26,7 @@ from app.models.api import (
 from app.repositories.search_repository import SearchRepository
 from app.rag.service import RagService
 from app.services.dialogue_export import build_dialogues_markdown
+from app.services.static_instruction import save_instruction_upload
 from rolemodel_etl.loader import init_db, load_to_db
 from rolemodel_etl.parser import parse_workbook
 
@@ -193,6 +194,23 @@ def build_app(config: AppConfig | None = None) -> FastAPI:
         if not source:
             raise HTTPException(status_code=404, detail=f"RAG source {source_id} was not found")
         return source
+
+    @app.post("/api/v1/admin/instruction/upload")
+    async def upload_instruction_file(request: Request) -> dict:
+        raw_name = unquote(request.headers.get("x-file-name") or "instruction.txt")
+        body = await request.body()
+        try:
+            result = save_instruction_upload(raw_name, body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=f"Не удалось сохранить инструкцию: {exc}") from exc
+        rag_service.clear_inline_instruction_cache()
+        return {
+            "status": "SUCCESS",
+            "message": "Инструкция успешно загружена.",
+            **result,
+        }
 
     @app.post("/api/v1/admin/rolemodel/upload")
     async def upload_rolemodel_file(request: Request) -> dict:
