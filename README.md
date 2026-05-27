@@ -9,8 +9,8 @@ Server-side chat assistant for role/access lookup on top of:
 
 - `rolemodel_etl/` - ETL from Excel into PostgreSQL.
 - `app/` - FastAPI backend, server-side agent, static instruction handling, minimal chat UI.
-- `tests/` - unit and integration-style tests for parser, agent logic, instruction upload, and `pptx` extraction.
-- `docker-compose.yml` - local PostgreSQL with `pgvector`.
+- `tests/` - unit and integration-style tests for parser, agent logic, instruction upload, and operational checks.
+- `docker-compose.yml` - local PostgreSQL.
 
 ## Install
 
@@ -36,11 +36,9 @@ Optional app settings:
 ```bash
 export RM_APP_HOST=127.0.0.1
 export RM_APP_PORT=8000
-export RM_TESSERACT_CMD=tesseract
-export RM_TESSERACT_LANGS=rus+eng
 ```
 
-GigaChat settings (for intent parsing and chunking/answer synthesis):
+GigaChat settings (for intent parsing and static instruction answer synthesis):
 
 ```bash
 # Use either RM_GIGACHAT_AUTH_KEY or RM_GIGACHAT_CLIENT_ID + RM_GIGACHAT_CLIENT_SECRET.
@@ -50,20 +48,18 @@ export RM_GIGACHAT_AUTH_KEY="<basic auth key>"
 
 export RM_GIGACHAT_SCOPE=GIGACHAT_API_PERS
 export RM_GIGACHAT_CHAT_MODEL=GigaChat-2-Pro
-export RM_GIGACHAT_CHUNK_MODEL=GigaChat-2-Pro
 export RM_GIGACHAT_AUTH_URL=https://ngw.devices.sberbank.ru:9443/api/v2/oauth
 export RM_GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
 export RM_GIGACHAT_TIMEOUT_SEC=45
 export RM_GIGACHAT_VERIFY_SSL=true
 # export RM_GIGACHAT_CA_BUNDLE="/absolute/path/to/ca.pem"
 export RM_GIGACHAT_USE_FOR_INTENT=true
-export RM_GIGACHAT_USE_FOR_CHUNKING=true
-export RM_GIGACHAT_USE_FOR_RAG_ANSWER=true
+export RM_GIGACHAT_USE_FOR_INSTRUCTION_ANSWER=true
 ```
 
 ## Local DB
 
-Start PostgreSQL with `pgvector`:
+Start PostgreSQL:
 
 ```bash
 docker compose up -d postgres
@@ -131,7 +127,8 @@ bash scripts/install_rolemodel_helper_server.sh
 ```
 
 The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
-`bdtest`, schema `rolemodel_helper`. It does not start local Docker.
+`bdtest`, schema `rolemodel_helper`. It does not start local Docker and does not
+require the PostgreSQL `vector` extension.
 
 Open the minimal chat UI:
 
@@ -146,9 +143,6 @@ Main endpoints:
 - `GET /api/v1/chat/sessions/{session_id}`
 - `POST /api/v1/admin/systems/aliases`
 - `POST /api/v1/admin/instruction/upload`
-- `POST /api/v1/admin/rag/sources`
-- `POST /api/v1/admin/rag/ingest`
-- `GET /api/v1/admin/rag/sources/{source_id}`
 - `GET /api/v1/health`
 
 ## Tests

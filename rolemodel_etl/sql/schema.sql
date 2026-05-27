@@ -1,5 +1,4 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS etl_run (
     id BIGSERIAL PRIMARY KEY,
@@ -312,81 +311,6 @@ ALTER TABLE chat_slot_state
 ALTER TABLE tool_call_log
     ADD COLUMN IF NOT EXISTS result_summary TEXT;
 
-CREATE TABLE IF NOT EXISTS rag_source (
-    id BIGSERIAL PRIMARY KEY,
-    source_type TEXT NOT NULL CHECK (source_type IN ('PPTX', 'PDF', 'DOCX', 'HTML', 'TEXT')),
-    title TEXT NOT NULL,
-    file_path TEXT NOT NULL,
-    source_hash TEXT NOT NULL,
-    system_id BIGINT REFERENCES system(id) ON DELETE SET NULL,
-    status TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'INGESTING', 'READY', 'FAILED')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_error TEXT
-);
-
-CREATE TABLE IF NOT EXISTS rag_document (
-    id BIGSERIAL PRIMARY KEY,
-    source_id BIGINT NOT NULL REFERENCES rag_source(id) ON DELETE CASCADE,
-    document_title TEXT NOT NULL,
-    document_metadata JSONB NOT NULL DEFAULT '{}'::jsonb
-);
-
-CREATE TABLE IF NOT EXISTS rag_fragment (
-    id BIGSERIAL PRIMARY KEY,
-    document_id BIGINT NOT NULL REFERENCES rag_document(id) ON DELETE CASCADE,
-    fragment_no INTEGER NOT NULL CHECK (fragment_no >= 1),
-    fragment_type TEXT NOT NULL CHECK (fragment_type IN ('SLIDE_TEXT', 'SLIDE_IMAGE_OCR', 'SLIDE_IMAGE_SUMMARY')),
-    slide_no INTEGER,
-    fragment_text TEXT NOT NULL,
-    fragment_metadata JSONB NOT NULL DEFAULT '{}'::jsonb
-);
-
-CREATE TABLE IF NOT EXISTS rag_chunk (
-    id BIGSERIAL PRIMARY KEY,
-    document_id BIGINT NOT NULL REFERENCES rag_document(id) ON DELETE CASCADE,
-    fragment_id BIGINT REFERENCES rag_fragment(id) ON DELETE SET NULL,
-    chunk_no INTEGER NOT NULL CHECK (chunk_no >= 1),
-    slide_no INTEGER,
-    chunk_type TEXT NOT NULL,
-    chunk_text TEXT NOT NULL,
-    chunk_tokens_est INTEGER NOT NULL DEFAULT 0 CHECK (chunk_tokens_est >= 0),
-    chunk_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-    embedding VECTOR(128),
-    tsv TSVECTOR GENERATED ALWAYS AS (to_tsvector('russian', coalesce(chunk_text, ''))) STORED,
-    search_text TEXT GENERATED ALWAYS AS (lower(coalesce(chunk_text, ''))) STORED
-);
-
-CREATE TABLE IF NOT EXISTS rag_citation (
-    id BIGSERIAL PRIMARY KEY,
-    chunk_id BIGINT NOT NULL REFERENCES rag_chunk(id) ON DELETE CASCADE,
-    citation_label TEXT NOT NULL,
-    locator_text TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS rag_ingest_run (
-    id BIGSERIAL PRIMARY KEY,
-    source_id BIGINT NOT NULL REFERENCES rag_source(id) ON DELETE CASCADE,
-    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    finished_at TIMESTAMPTZ,
-    status TEXT NOT NULL CHECK (status IN ('RUNNING', 'SUCCESS', 'FAILED')),
-    slides_processed INTEGER NOT NULL DEFAULT 0 CHECK (slides_processed >= 0),
-    fragments_created INTEGER NOT NULL DEFAULT 0 CHECK (fragments_created >= 0),
-    chunks_created INTEGER NOT NULL DEFAULT 0 CHECK (chunks_created >= 0),
-    errors_count INTEGER NOT NULL DEFAULT 0 CHECK (errors_count >= 0)
-);
-
-CREATE TABLE IF NOT EXISTS rag_ingest_error (
-    id BIGSERIAL PRIMARY KEY,
-    ingest_run_id BIGINT NOT NULL REFERENCES rag_ingest_run(id) ON DELETE CASCADE,
-    stage TEXT NOT NULL,
-    slide_no INTEGER,
-    fragment_ref TEXT,
-    error_code TEXT NOT NULL,
-    error_message TEXT NOT NULL,
-    raw_context TEXT
-);
-
 CREATE INDEX IF NOT EXISTS idx_profile_profile_code ON profile (profile_code);
 CREATE INDEX IF NOT EXISTS idx_profile_snapshot ON profile (snapshot_id);
 CREATE INDEX IF NOT EXISTS idx_system_ci_code ON system (ci_code);
@@ -404,21 +328,6 @@ CREATE INDEX IF NOT EXISTS idx_tool_call_log_session ON tool_call_log (session_i
 CREATE INDEX IF NOT EXISTS idx_chat_candidate_set_session ON chat_candidate_set (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_candidate_option_set_rank ON chat_candidate_option (candidate_set_id, rank_no);
 CREATE INDEX IF NOT EXISTS idx_chat_turn_interpretation_session ON chat_turn_interpretation (session_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_rag_source_status ON rag_source (status);
-CREATE INDEX IF NOT EXISTS idx_rag_fragment_document_slide ON rag_fragment (document_id, slide_no);
-CREATE INDEX IF NOT EXISTS idx_rag_chunk_document_slide ON rag_chunk (document_id, slide_no);
-CREATE INDEX IF NOT EXISTS idx_rag_chunk_tsv ON rag_chunk USING GIN (tsv);
-CREATE INDEX IF NOT EXISTS idx_rag_chunk_search_text ON rag_chunk USING GIN (search_text gin_trgm_ops);
-
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_am WHERE amname = 'hnsw') THEN
-        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_rag_chunk_embedding_hnsw ON rag_chunk USING hnsw (embedding vector_cosine_ops)';
-    ELSIF EXISTS (SELECT 1 FROM pg_am WHERE amname = 'ivfflat') THEN
-        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_rag_chunk_embedding_ivfflat ON rag_chunk USING ivfflat (embedding vector_cosine_ops) WITH (lists = 16)';
-    END IF;
-END $$;
-
 CREATE OR REPLACE VIEW v_active_snapshot AS
 SELECT id, run_id, loaded_at, source_file, sheet_name, model_code, model_name
 FROM snapshot

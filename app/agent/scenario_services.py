@@ -236,9 +236,9 @@ class RoleDiscoveryService:
 
 
 class InstructionService:
-    def __init__(self, search_repository, rag_service) -> None:
+    def __init__(self, search_repository, instruction_answer_service) -> None:
         self.search_repository = search_repository
-        self.rag_service = rag_service
+        self.instruction_answer_service = instruction_answer_service
 
     def answer(
         self,
@@ -254,7 +254,7 @@ class InstructionService:
         if resolved_system_name:
             query_text = f"{query_text} {resolved_system_name}"
 
-        inline_answer = self.rag_service.answer_from_inline_doc(
+        inline_answer = self.instruction_answer_service.answer_from_static_instruction(
             query_text,
             context={
                 "intent_type": "INSTRUCTION_LOOKUP",

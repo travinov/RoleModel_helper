@@ -208,16 +208,16 @@ class FakeGiga:
         return result
 
 
-class FakeRagService:
-    def load_inline_instruction_pack(self, source_id=None, file_path=None) -> dict:
+class FakeInstructionAnswerService:
+    def load_instruction_pack(self, file_path=None) -> dict:
         return {
             "title": "Памятка",
-            "slides_count": 5,
+            "sections_count": 5,
             "text_length": 1200,
             "sections": [],
         }
 
-    def answer_from_inline_doc(self, query_text: str, context=None) -> dict | None:
+    def answer_from_static_instruction(self, query_text: str, context=None) -> dict | None:
         return {
             "instruction": f"Inline-инструкция: {query_text}",
             "citations": [
@@ -235,28 +235,6 @@ class FakeRagService:
             ],
             "summary_text": f"Inline-инструкция: {query_text}",
             "instruction_mode": "INLINE_DOC",
-        }
-
-    def search_instructions(self, query_text: str) -> list[RetrievedChunk]:
-        return [
-            RetrievedChunk(
-                chunk_id=1,
-                source_id=1,
-                source_title="Памятка",
-                slide_no=3,
-                chunk_type="SLIDE_TEXT",
-                chunk_text=f"Инструкция по запросу: {query_text}",
-                score=0.42,
-                citation_label="Памятка, слайд 3",
-                locator_text="слайд 3",
-            )
-        ]
-
-    def answer_with_rag(self, query_text: str, retrieved_chunks: list[RetrievedChunk], answer_style: str = "steps") -> dict:
-        return {
-            "instruction": f"Шаги для запроса доступа: {query_text}",
-            "citations": retrieved_chunks,
-            "summary_text": f"Шаги для запроса доступа: {query_text}",
         }
 
 
@@ -661,7 +639,7 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
                 )
             ),
             search_repository=self.repo,
-            rag_service=FakeRagService(),
+            instruction_answer_service=FakeInstructionAnswerService(),
             gigachat=FakeGiga(),
         )
         self.fixtures_dir = Path(__file__).resolve().parent / "fixtures"

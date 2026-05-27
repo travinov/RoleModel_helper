@@ -19,7 +19,7 @@
 - [ ] PostgreSQL schema/data contract/query behavior
 - [ ] Chat API contract
 - [ ] Agent state machine/slots/phase transitions
-- [ ] RAG ingestion/retrieval/citation behavior
+- [ ] Static instruction upload/answer behavior
 - [ ] Dialogue benchmark/replay expectations
 - [x] Operational checks
 

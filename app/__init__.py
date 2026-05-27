@@ -1,2 +1,1 @@
-"""Application package for chat agent and RAG."""
-
+"""Application package for the chat agent."""
