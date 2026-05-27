@@ -14,6 +14,7 @@ DEFAULT_DB_HOST="10.135.162.149"
 DEFAULT_DB_PORT="5433"
 DEFAULT_DB_NAME="bdtest"
 DEFAULT_DB_SCHEMA="rolemodel_helper"
+DEFAULT_DB_USER="CI09479675-pg-travinov"
 DEFAULT_APP_HOST="0.0.0.0"
 DEFAULT_APP_PORT="8000"
 DEFAULT_INSTALL_DIR=""
@@ -31,9 +32,10 @@ Install RoleModel Helper on a Linux server from the extracted ZIP archive.
 Defaults are prepared for:
   CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
   PostgreSQL: 10.135.162.149:5433/bdtest
+  PostgreSQL user: CI09479675-pg-travinov
 
 Environment variables:
-  RM_DB_USER       required unless entered interactively
+  RM_DB_USER       default: CI09479675-pg-travinov
   RM_DB_PASSWORD   required unless entered interactively
   RM_DB_HOST       default: 10.135.162.149
   RM_DB_PORT       default: 5433
@@ -133,18 +135,12 @@ RM_DB_HOST="${RM_DB_HOST:-$DEFAULT_DB_HOST}"
 RM_DB_PORT="${RM_DB_PORT:-$DEFAULT_DB_PORT}"
 RM_DB_NAME="${RM_DB_NAME:-$DEFAULT_DB_NAME}"
 RM_DB_SCHEMA="${RM_DB_SCHEMA:-$DEFAULT_DB_SCHEMA}"
+RM_DB_USER="${RM_DB_USER:-$DEFAULT_DB_USER}"
 RM_APP_HOST="${RM_APP_HOST:-$DEFAULT_APP_HOST}"
 RM_APP_PORT="${RM_APP_PORT:-$DEFAULT_APP_PORT}"
 RM_ROLEMODEL_UPLOAD_DIR="${RM_ROLEMODEL_UPLOAD_DIR:-$INSTALL_DIR/uploads/rolemodel}"
 RM_INSTRUCTION_UPLOAD_DIR="${RM_INSTRUCTION_UPLOAD_DIR:-$INSTALL_DIR/uploads/instruction}"
 RM_DB_BACKUP_DIR="${RM_DB_BACKUP_DIR:-$INSTALL_DIR/backups}"
-
-if [[ -z "${RM_DB_USER:-}" ]]; then
-  if [[ "$NONINTERACTIVE" == "1" ]]; then
-    fail "RM_DB_USER is required in NONINTERACTIVE mode"
-  fi
-  read -r -p "RM_DB_USER: " RM_DB_USER
-fi
 
 if [[ -z "${RM_DB_PASSWORD:-}" ]]; then
   if [[ "$NONINTERACTIVE" == "1" ]]; then

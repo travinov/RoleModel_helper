@@ -106,14 +106,13 @@ After downloading and extracting the GitHub ZIP on
 `CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru`, run:
 
 ```bash
-export RM_DB_USER="<database user>"
-export RM_DB_PASSWORD="<database password>"
 bash scripts/install_rolemodel_helper_server.sh
 ```
 
 The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
-`bdtest`, schema `rolemodel_helper`. It does not require local container runtime
-or the PostgreSQL `vector` extension.
+`bdtest`, schema `rolemodel_helper`, database user `CI09479675-pg-travinov`,
+and application port `8000`. It asks for the database password with hidden input
+and does not require local container runtime or the PostgreSQL `vector` extension.
 
 Open the minimal chat UI:
 

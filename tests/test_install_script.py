@@ -18,6 +18,7 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("5433", script)
         self.assertIn("bdtest", script)
         self.assertIn("rolemodel_helper", script)
+        self.assertIn("CI09479675-pg-travinov", script)
         self.assertIn("tvles-assai0001.esrt.sber.ru", script)
         self.assertIn("CI09479675-lnx-travinov", script)
         self.assertIn("rolemodel_etl db.init", script)
@@ -25,6 +26,7 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("rolemodel_etl load", script)
         self.assertIn("python -m app", script)
         self.assertNotIn("docker compose up", script)
+        self.assertNotIn("|Cyt;p22hhA*[b.kFXhWn&+8", script)
 
     def test_ci_server_installer_is_bash_syntax_valid(self) -> None:
         result = subprocess.run(

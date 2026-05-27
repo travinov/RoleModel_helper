@@ -26,8 +26,8 @@
 ## Requirements
 - Functional:
   - The script can be launched from the extracted repository root.
-  - Defaults target DB settings to `10.135.162.149:5433`, database `bdtest`, schema `rolemodel_helper`.
-  - DB user and password are supplied through environment variables or interactive prompts.
+  - Defaults target DB settings to `10.135.162.149:5433`, database `bdtest`, schema `rolemodel_helper`, user `CI09479675-pg-travinov`.
+  - DB password is supplied through an environment variable or hidden interactive prompt.
   - The script creates a Python virtual environment, installs `requirements.txt`, initializes DB schema, validates the bundled workbook, and loads it unless explicitly skipped.
   - The script creates an app env file and a runnable user-level service or fallback start script.
 - Technical constraints:
