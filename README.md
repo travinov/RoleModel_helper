@@ -102,8 +102,19 @@ Start the API server:
 
 ## Corporate Linux server install
 
-After downloading and extracting the GitHub ZIP on
-`CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru`, run:
+From your local machine, after downloading and extracting the GitHub ZIP, run:
+
+```bash
+bash scripts/deploy_rolemodel_helper_remote.sh
+```
+
+This uploads the extracted checkout to
+`CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru` over SSH and then runs
+the server-side installer there. The default remote directory is
+`~/RoleModelHelper2`.
+
+If you are already logged in to the app server and the ZIP is extracted there,
+run only the server-side installer:
 
 ```bash
 bash scripts/install_rolemodel_helper_server.sh
@@ -114,7 +125,14 @@ The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
 and application port `8000`. It asks for the database password with hidden input
 and does not require local container runtime or the PostgreSQL `vector` extension.
 
-Open the minimal chat UI:
+When the app runs on the remote server, `127.0.0.1` means "localhost on that
+server". From your local machine, open it through an SSH tunnel:
+
+```bash
+ssh -L 8000:127.0.0.1:8000 CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
+```
+
+Then open the minimal chat UI locally:
 
 ```text
 http://127.0.0.1:8000/
