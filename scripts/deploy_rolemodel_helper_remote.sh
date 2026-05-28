@@ -55,6 +55,7 @@ Options:
   --skip-workbook-load    pass through to the server installer
   --skip-service          pass through to the server installer
   --force-systemd         pass through to the server installer
+  --reset-db              pass through full DB schema reset to the server installer
   -h, --help              show this help
 
 After deployment, open the app through an SSH tunnel from your local machine:
@@ -100,7 +101,7 @@ while (($#)); do
       APP_REMOTE_DIR="$2"
       shift 2
       ;;
-    --skip-db-init|--skip-workbook-load|--skip-service|--force-systemd)
+    --skip-db-init|--skip-workbook-load|--skip-service|--force-systemd|--reset-db)
       INSTALL_ARGS+=("$1")
       shift
       ;;

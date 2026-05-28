@@ -23,6 +23,7 @@ SKIP_DB_INIT=0
 SKIP_WORKBOOK_LOAD=0
 SKIP_SERVICE=0
 FORCE_SYSTEMD=0
+RESET_DB=0
 NONINTERACTIVE="${NONINTERACTIVE:-0}"
 
 usage() {
@@ -52,6 +53,7 @@ Options:
   --skip-workbook-load   do not validate/load the bundled workbook
   --skip-service         do not create/start a user systemd service
   --force-systemd        fail if user systemd setup is unavailable
+  --reset-db             drop and recreate the configured DB schema before loading
   -h, --help             show this help
 
 After installation:
@@ -96,6 +98,10 @@ while (($#)); do
       FORCE_SYSTEMD=1
       shift
       ;;
+    --reset-db)
+      RESET_DB=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -105,6 +111,10 @@ while (($#)); do
       ;;
   esac
 done
+
+if [[ "$RESET_DB" == "1" && "$SKIP_DB_INIT" == "1" ]]; then
+  fail "--reset-db cannot be combined with --skip-db-init"
+fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
@@ -217,12 +227,98 @@ with get_connection(config) as conn:
         print(cursor.fetchone()[0])
 PY
 
+check_db_schema() {
+  ".venv/bin/python" - <<'PY'
+import json
+import re
+
+from app.config import AppConfig
+from rolemodel_etl.db import get_connection, read_schema_sql
+
+config = AppConfig.from_env().db
+schema_sql = read_schema_sql()
+required_tables = sorted(set(re.findall(r"CREATE TABLE IF NOT EXISTS\s+([a-zA-Z_][a-zA-Z0-9_]*)", schema_sql)))
+
+with get_connection(config) as conn:
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = %s
+              AND table_type = 'BASE TABLE'
+            """,
+            (config.schema,),
+        )
+        existing_tables = {row[0] for row in cursor.fetchall()}
+
+missing_tables = sorted(set(required_tables) - existing_tables)
+print(
+    json.dumps(
+        {
+            "schema": config.schema,
+            "required_tables": len(required_tables),
+            "existing_required_tables": len(required_tables) - len(missing_tables),
+            "missing_tables": missing_tables,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+)
+raise SystemExit(2 if missing_tables else 0)
+PY
+}
+
+if [[ "$RESET_DB" == "1" ]]; then
+  log "Resetting PostgreSQL schema '$RM_DB_SCHEMA' before initialization"
+  ".venv/bin/python" - <<'PY'
+from app.config import AppConfig
+from psycopg2 import sql
+from rolemodel_etl.db import get_connection
+
+config = AppConfig.from_env().db
+with get_connection(config) as conn:
+    conn.autocommit = True
+    with conn.cursor() as cursor:
+        cursor.execute(sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(sql.Identifier(config.schema)))
+PY
+  DB_SCHEMA_READY=0
+else
+  log "Checking whether PostgreSQL schema '$RM_DB_SCHEMA' is initialized"
+  set +e
+  DB_SCHEMA_CHECK_OUTPUT="$(check_db_schema)"
+  DB_SCHEMA_CHECK_STATUS=$?
+  set -e
+  printf '%s\n' "$DB_SCHEMA_CHECK_OUTPUT"
+  if [[ "$DB_SCHEMA_CHECK_STATUS" == "0" ]]; then
+    DB_SCHEMA_READY=1
+    log "PostgreSQL schema '$RM_DB_SCHEMA' already contains all required tables"
+  elif [[ "$DB_SCHEMA_CHECK_STATUS" == "2" ]]; then
+    DB_SCHEMA_READY=0
+    log "PostgreSQL schema '$RM_DB_SCHEMA' is incomplete; initialization will create missing objects"
+  else
+    fail "DB schema check failed"
+  fi
+fi
+
 if [[ "$SKIP_DB_INIT" != "1" ]]; then
-  log "Running: python -m rolemodel_etl db.init"
+  if [[ "$RESET_DB" == "1" ]]; then
+    log "Running: python -m rolemodel_etl db.init after full schema reset"
+  elif [[ "$DB_SCHEMA_READY" == "1" ]]; then
+    log "Running: python -m rolemodel_etl db.init to apply idempotent schema updates"
+  else
+    log "Running: python -m rolemodel_etl db.init"
+  fi
   ".venv/bin/python" -m rolemodel_etl db.init
 else
+  if [[ "$DB_SCHEMA_READY" != "1" ]]; then
+    fail "DB schema is incomplete and --skip-db-init was requested"
+  fi
   log "Skipping DB init"
 fi
+
+log "Verifying PostgreSQL schema '$RM_DB_SCHEMA' after initialization"
+check_db_schema
 
 WORKBOOK_PATH="$INSTALL_DIR/Doc/ЦРМ_ПЦП_ЦКРР_(ролевая).xlsx"
 if [[ "$SKIP_WORKBOOK_LOAD" != "1" ]]; then

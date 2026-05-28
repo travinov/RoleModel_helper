@@ -30,12 +30,15 @@
   - Defaults target DB settings to `10.135.162.149:5433`, database `bdtest`, schema `rolemodel_helper`, user `CI09479675-pg-travinov`.
   - DB password is supplied through an environment variable or hidden interactive prompt.
   - The script creates a Python virtual environment, installs `requirements.txt`, initializes DB schema, validates the bundled workbook, and loads it unless explicitly skipped.
+  - The script checks whether all required schema tables exist before and after initialization.
+  - The optional `--reset-db` mode drops the configured schema and recreates all DB objects from scratch.
   - The script creates an app env file and a runnable user-level service or fallback start script.
 - Technical constraints:
   - Bash script only; no new dependency.
   - Keep secrets out of command-line arguments and protect the env file with mode `600`.
   - Pass the DB password from the local deploy script to the remote installer through stdin.
   - Preserve direct-IP DB host use; do not substitute hostname.
+  - Require an explicit `--reset-db` flag for destructive DB overwrite.
 - Operational constraints:
   - Work without local Docker.
   - If user-level systemd is unavailable, leave clear start/stop scripts in the install directory.
@@ -50,6 +53,7 @@
 - Side effects:
   - Creates schema/tables/extensions in the configured external DB.
   - Loads the bundled role model workbook when not skipped.
+  - With `--reset-db`, deletes the configured schema and all contained data before re-creating it.
 
 ## Domain Invariants
 - Preserved:
@@ -64,6 +68,8 @@
 3. The installer refuses to run without DB credentials unless they are entered interactively.
 4. The installer uses `10.135.162.149` and `5433` by default and does not start local Docker.
 5. The installer writes protected env files and provides a way to start the app after ZIP extraction.
+6. The installer reports missing required DB tables and verifies the schema after initialization.
+7. The deploy script can pass through `--reset-db` for a full schema overwrite.
 
 ## Test Plan (TDD)
 - RED command:
@@ -80,6 +86,7 @@
 
 ## DB / Snapshot Verification
 - Runtime script verification:
+  - The DB schema check reports required/missing tables.
   - `rolemodel_etl db.init` must complete against the external DB.
   - `rolemodel_etl validate` must pass for the bundled workbook.
   - `rolemodel_etl load` must create an active snapshot.
@@ -101,5 +108,6 @@
   - The default path is user-local to avoid requiring `sudo` on a corporate server.
   - Credentials stay outside Git and are written only to the generated server env file.
   - `127.0.0.1` in installer output is server-local; local browser access should use an SSH tunnel unless the app port is exposed by network policy.
+  - Destructive DB overwrite is explicit via `--reset-db`; the default path remains non-destructive and idempotent.
 - Open questions / risks:
   - The DB user must have enough privileges for `CREATE SCHEMA` and required extensions, or extensions must be pre-created by DBA.
