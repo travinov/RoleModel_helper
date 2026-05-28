@@ -25,6 +25,10 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("rolemodel_etl db.init", script)
         self.assertIn("rolemodel_etl validate", script)
         self.assertIn("rolemodel_etl load", script)
+        self.assertIn("--reset-db", script)
+        self.assertIn("DROP SCHEMA IF EXISTS", script)
+        self.assertIn("information_schema.tables", script)
+        self.assertIn("missing_tables", script)
         self.assertIn("python -m app", script)
         self.assertNotIn("docker compose up", script)
         self.assertNotIn("|Cyt;p22hhA*[b.kFXhWn&+8", script)
@@ -55,6 +59,7 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("rolemodel_helper", script)
         self.assertIn("CI09479675-pg-travinov", script)
         self.assertIn("RM_DB_PASSWORD=$(cat)", script)
+        self.assertIn("--reset-db", script)
         self.assertNotIn("docker compose up", script)
         self.assertNotIn("|Cyt;p22hhA*[b.kFXhWn&+8", script)
 

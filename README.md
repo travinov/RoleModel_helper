@@ -124,6 +124,18 @@ The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
 `bdtest`, schema `rolemodel_helper`, database user `CI09479675-pg-travinov`,
 and application port `8000`. It asks for the database password with hidden input
 and does not require local container runtime or the PostgreSQL `vector` extension.
+During installation it checks whether the configured PostgreSQL schema already
+contains all required tables, initializes missing objects, and verifies the
+schema again before loading the workbook.
+
+For a full overwrite at the current setup stage, use:
+
+```bash
+bash scripts/deploy_rolemodel_helper_remote.sh --reset-db
+```
+
+`--reset-db` drops the configured schema `rolemodel_helper` with `CASCADE`,
+recreates it, and loads the bundled workbook from scratch.
 
 When the app runs on the remote server, `127.0.0.1` means "localhost on that
 server". From your local machine, open it through an SSH tunnel:
