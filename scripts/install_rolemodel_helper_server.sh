@@ -10,11 +10,11 @@ set -Eeuo pipefail
 TARGET_SSH_USER="CI09479675-lnx-travinov"
 TARGET_HOST="tvles-assai0001.esrt.sber.ru"
 
-DEFAULT_DB_HOST="10.135.162.149"
+DEFAULT_DB_HOST="tsles-assai0001.esrt.sber.ru"
 DEFAULT_DB_PORT="5433"
 DEFAULT_DB_NAME="bdtest"
 DEFAULT_DB_SCHEMA="rolemodel_helper"
-DEFAULT_DB_USER="CI09479675-pg-travinov"
+DEFAULT_DB_USER="CI09479675-lnx-travinov"
 DEFAULT_APP_HOST="0.0.0.0"
 DEFAULT_APP_PORT="8000"
 DEFAULT_INSTALL_DIR=""
@@ -32,13 +32,13 @@ Install RoleModel Helper on a Linux server from the extracted ZIP archive.
 
 Defaults are prepared for:
   CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
-  PostgreSQL: 10.135.162.149:5433/bdtest
-  PostgreSQL user: CI09479675-pg-travinov
+  PostgreSQL: tsles-assai0001.esrt.sber.ru:5433/bdtest
+  PostgreSQL user: CI09479675-lnx-travinov
 
 Environment variables:
-  RM_DB_USER       default: CI09479675-pg-travinov
+  RM_DB_USER       default: CI09479675-lnx-travinov
   RM_DB_PASSWORD   required unless entered interactively
-  RM_DB_HOST       default: 10.135.162.149
+  RM_DB_HOST       default: tsles-assai0001.esrt.sber.ru
   RM_DB_PORT       default: 5433
   RM_DB_NAME       default: bdtest
   RM_DB_SCHEMA     default: rolemodel_helper
