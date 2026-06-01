@@ -1,6 +1,7 @@
 # Secrets / local runtime
 .env
 .venv/
+.rolemodel_wheelhouse/
 __pycache__/
 *.py[cod]
 .pytest_cache/

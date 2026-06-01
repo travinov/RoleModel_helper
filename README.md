@@ -112,6 +112,9 @@ This uploads the extracted checkout to
 `CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru` over SSH and then runs
 the server-side installer there. The default remote directory is
 `~/RoleModelHelper2`.
+Before upload, the deploy script downloads Linux Python wheels into
+`.rolemodel_wheelhouse` and sends them with the app, so the app server does not
+need outbound access to PyPI during installation.
 
 If you are already logged in to the app server and the ZIP is extracted there,
 run only the server-side installer:

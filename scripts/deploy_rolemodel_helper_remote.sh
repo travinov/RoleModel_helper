@@ -47,6 +47,7 @@ Environment variables:
   RM_DB_NAME        database name
   RM_DB_SCHEMA      database schema
   RM_APP_PORT       application port
+  RM_SKIP_WHEELHOUSE=1 skip local wheelhouse build
 
 Options:
   --target SSH_TARGET     override app server SSH target
@@ -124,6 +125,24 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 command -v ssh >/dev/null 2>&1 || fail "ssh is required"
 command -v tar >/dev/null 2>&1 || fail "tar is required"
+
+LOCAL_WHEELHOUSE_DIR="$REPO_ROOT/.rolemodel_wheelhouse"
+if [[ "${RM_SKIP_WHEELHOUSE:-0}" != "1" ]]; then
+  command -v python3 >/dev/null 2>&1 || fail "python3 is required to build the local wheelhouse"
+  log "Preparing Linux Python wheelhouse at $LOCAL_WHEELHOUSE_DIR"
+  rm -rf "$LOCAL_WHEELHOUSE_DIR"
+  mkdir -p "$LOCAL_WHEELHOUSE_DIR"
+  python3 -m pip download \
+    --dest "$LOCAL_WHEELHOUSE_DIR" \
+    --only-binary=:all: \
+    --platform manylinux2014_x86_64 \
+    --implementation cp \
+    --python-version 39 \
+    --abi cp39 \
+    -r "$REPO_ROOT/requirements.txt"
+else
+  log "Skipping local wheelhouse build"
+fi
 
 if [[ -z "${RM_DB_PASSWORD:-}" ]]; then
   read -r -s -p "RM_DB_PASSWORD: " RM_DB_PASSWORD

@@ -45,6 +45,7 @@ Environment variables:
   RM_APP_HOST      default: 0.0.0.0
   RM_APP_PORT      default: 8000
   RM_INSTALL_DIR   default: extracted repository root
+  RM_WHEELHOUSE_DIR default: .rolemodel_wheelhouse inside install dir
   NONINTERACTIVE=1 fail instead of prompting for missing credentials
 
 Options:
@@ -151,6 +152,7 @@ RM_APP_PORT="${RM_APP_PORT:-$DEFAULT_APP_PORT}"
 RM_ROLEMODEL_UPLOAD_DIR="${RM_ROLEMODEL_UPLOAD_DIR:-$INSTALL_DIR/uploads/rolemodel}"
 RM_INSTRUCTION_UPLOAD_DIR="${RM_INSTRUCTION_UPLOAD_DIR:-$INSTALL_DIR/uploads/instruction}"
 RM_DB_BACKUP_DIR="${RM_DB_BACKUP_DIR:-$INSTALL_DIR/backups}"
+RM_WHEELHOUSE_DIR="${RM_WHEELHOUSE_DIR:-$INSTALL_DIR/.rolemodel_wheelhouse}"
 
 if [[ -z "${RM_DB_PASSWORD:-}" ]]; then
   if [[ "$NONINTERACTIVE" == "1" ]]; then
@@ -187,8 +189,14 @@ PY
 
 log "Creating Python virtual environment"
 python3 -m venv .venv
-".venv/bin/python" -m pip install --upgrade pip
-".venv/bin/python" -m pip install -r requirements.txt
+if [[ -d "$RM_WHEELHOUSE_DIR" ]] && compgen -G "$RM_WHEELHOUSE_DIR/*.whl" >/dev/null; then
+  log "Installing Python dependencies from local wheelhouse: $RM_WHEELHOUSE_DIR"
+  ".venv/bin/python" -m pip install --no-index --find-links "$RM_WHEELHOUSE_DIR" -r requirements.txt
+else
+  log "Installing Python dependencies from package index"
+  ".venv/bin/python" -m pip install --upgrade pip
+  ".venv/bin/python" -m pip install -r requirements.txt
+fi
 
 mkdir -p logs uploads backups "$RM_ROLEMODEL_UPLOAD_DIR" "$RM_INSTRUCTION_UPLOAD_DIR" "$RM_DB_BACKUP_DIR"
 chmod 700 logs uploads backups "$RM_ROLEMODEL_UPLOAD_DIR" "$RM_INSTRUCTION_UPLOAD_DIR" "$RM_DB_BACKUP_DIR"
