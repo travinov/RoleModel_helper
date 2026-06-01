@@ -7,11 +7,11 @@ set -Eeuo pipefail
 DEFAULT_APP_SSH_TARGET="CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru"
 DEFAULT_APP_REMOTE_DIR="RoleModelHelper2"
 
-DEFAULT_DB_HOST="10.135.162.149"
+DEFAULT_DB_HOST="tsles-assai0001.esrt.sber.ru"
 DEFAULT_DB_PORT="5433"
 DEFAULT_DB_NAME="bdtest"
 DEFAULT_DB_SCHEMA="rolemodel_helper"
-DEFAULT_DB_USER="CI09479675-pg-travinov"
+DEFAULT_DB_USER="CI09479675-lnx-travinov"
 DEFAULT_APP_PORT="8000"
 
 APP_SSH_TARGET="${APP_SSH_TARGET:-$DEFAULT_APP_SSH_TARGET}"
@@ -32,9 +32,9 @@ Deploy RoleModel Helper from this local checkout to the corporate Linux app serv
 Defaults:
   App server: CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
   Remote dir: ~/RoleModelHelper2
-  PostgreSQL: 10.135.162.149:5433/bdtest
+  PostgreSQL: tsles-assai0001.esrt.sber.ru:5433/bdtest
   PostgreSQL schema: rolemodel_helper
-  PostgreSQL user: CI09479675-pg-travinov
+  PostgreSQL user: CI09479675-lnx-travinov
   App port: 8000
 
 Environment variables:

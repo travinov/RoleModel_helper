@@ -27,7 +27,7 @@
 - Functional:
   - The script can be launched from the extracted repository root.
   - A local deploy script uploads the repository over SSH and runs the server installer on the app server.
-  - Defaults target DB settings to `10.135.162.149:5433`, database `bdtest`, schema `rolemodel_helper`, user `CI09479675-pg-travinov`.
+  - Defaults target DB settings to `tsles-assai0001.esrt.sber.ru:5433`, database `bdtest`, schema `rolemodel_helper`, user `CI09479675-lnx-travinov`.
   - DB password is supplied through an environment variable or hidden interactive prompt.
   - The script creates a Python virtual environment, installs `requirements.txt`, initializes DB schema, validates the bundled workbook, and loads it unless explicitly skipped.
   - The script checks whether all required schema tables exist before and after initialization.
@@ -66,7 +66,7 @@
 1. A test verifies that the installer exists, is Bash syntax-valid, contains the external DB defaults, and references the current app/ETL entrypoints.
 2. A test verifies that the local deploy script exists, is Bash syntax-valid, uploads over SSH, and runs the server installer remotely.
 3. The installer refuses to run without DB credentials unless they are entered interactively.
-4. The installer uses `10.135.162.149` and `5433` by default and does not start local Docker.
+4. The installer uses `tsles-assai0001.esrt.sber.ru` and `5433` by default and does not start local Docker.
 5. The installer writes protected env files and provides a way to start the app after ZIP extraction.
 6. The installer reports missing required DB tables and verifies the schema after initialization.
 7. The deploy script can pass through `--reset-db` for a full schema overwrite.

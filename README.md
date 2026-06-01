@@ -120,8 +120,8 @@ run only the server-side installer:
 bash scripts/install_rolemodel_helper_server.sh
 ```
 
-The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
-`bdtest`, schema `rolemodel_helper`, database user `CI09479675-pg-travinov`,
+The installer defaults to external PostgreSQL `tsles-assai0001.esrt.sber.ru:5433`, database
+`bdtest`, schema `rolemodel_helper`, database user `CI09479675-lnx-travinov`,
 and application port `8000`. It asks for the database password with hidden input
 and does not require local container runtime or the PostgreSQL `vector` extension.
 During installation it checks whether the configured PostgreSQL schema already
