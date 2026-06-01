@@ -30,6 +30,8 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("RM_WHEELHOUSE_DIR", script)
         self.assertIn("--no-index", script)
         self.assertIn("--find-links", script)
+        self.assertIn("printf 'RM_DB_HOST=%s", script)
+        self.assertNotIn("printf 'export RM_DB_HOST=%s", script)
         self.assertIn("DROP SCHEMA IF EXISTS", script)
         self.assertIn("information_schema.tables", script)
         self.assertIn("missing_tables", script)
