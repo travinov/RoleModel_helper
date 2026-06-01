@@ -4,14 +4,14 @@ set -Eeuo pipefail
 # Run this script from a local machine with SSH access to the app server.
 # It uploads the current repository contents and runs the server-local installer there.
 
-DEFAULT_APP_SSH_TARGET="CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru"
+DEFAULT_APP_SSH_TARGET="CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru"
 DEFAULT_APP_REMOTE_DIR="RoleModelHelper2"
 
-DEFAULT_DB_HOST="tsles-assai0001.esrt.sber.ru"
+DEFAULT_DB_HOST="10.135.162.149"
 DEFAULT_DB_PORT="5433"
 DEFAULT_DB_NAME="bdtest"
 DEFAULT_DB_SCHEMA="rolemodel_helper"
-DEFAULT_DB_USER="CI09479675-lnx-travinov"
+DEFAULT_DB_USER="CI09479675-pg-travinov"
 DEFAULT_APP_PORT="8000"
 
 APP_SSH_TARGET="${APP_SSH_TARGET:-$DEFAULT_APP_SSH_TARGET}"
@@ -30,11 +30,11 @@ usage() {
 Deploy RoleModel Helper from this local checkout to the corporate Linux app server.
 
 Defaults:
-  App server: CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
+  App server: CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru
   Remote dir: ~/RoleModelHelper2
-  PostgreSQL: tsles-assai0001.esrt.sber.ru:5433/bdtest
+  PostgreSQL: 10.135.162.149:5433/bdtest
   PostgreSQL schema: rolemodel_helper
-  PostgreSQL user: CI09479675-lnx-travinov
+  PostgreSQL user: CI09479675-pg-travinov
   App port: 8000
 
 Environment variables:
@@ -59,7 +59,7 @@ Options:
   -h, --help              show this help
 
 After deployment, open the app through an SSH tunnel from your local machine:
-  ssh -L 8000:127.0.0.1:8000 CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
+  ssh -L 8000:127.0.0.1:8000 CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru
   http://127.0.0.1:8000/
 USAGE
 }
@@ -165,4 +165,4 @@ log "From your local machine, open it with an SSH tunnel:"
 log "  ssh -L $RM_APP_PORT:127.0.0.1:$RM_APP_PORT $APP_SSH_TARGET"
 log "Then open: http://127.0.0.1:$RM_APP_PORT/"
 log "Direct URL may work only if the corporate network/firewall exposes the port:"
-log "  http://tvles-assai0001.esrt.sber.ru:$RM_APP_PORT/"
+log "  http://tsles-assai0001.esrt.sber.ru:$RM_APP_PORT/"
