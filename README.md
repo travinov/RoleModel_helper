@@ -109,7 +109,7 @@ bash scripts/deploy_rolemodel_helper_remote.sh
 ```
 
 This uploads the extracted checkout to
-`CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru` over SSH and then runs
+`CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru` over SSH and then runs
 the server-side installer there. The default remote directory is
 `~/RoleModelHelper2`.
 
@@ -120,8 +120,8 @@ run only the server-side installer:
 bash scripts/install_rolemodel_helper_server.sh
 ```
 
-The installer defaults to external PostgreSQL `tsles-assai0001.esrt.sber.ru:5433`, database
-`bdtest`, schema `rolemodel_helper`, database user `CI09479675-lnx-travinov`,
+The installer defaults to external PostgreSQL `10.135.162.149:5433`, database
+`bdtest`, schema `rolemodel_helper`, database user `CI09479675-pg-travinov`,
 and application port `8000`. It asks for the database password with hidden input
 and does not require local container runtime or the PostgreSQL `vector` extension.
 During installation it checks whether the configured PostgreSQL schema already
@@ -141,7 +141,7 @@ When the app runs on the remote server, `127.0.0.1` means "localhost on that
 server". From your local machine, open it through an SSH tunnel:
 
 ```bash
-ssh -L 8000:127.0.0.1:8000 CI09479675-lnx-travinov@tvles-assai0001.esrt.sber.ru
+ssh -L 8000:127.0.0.1:8000 CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru
 ```
 
 Then open the minimal chat UI locally:
