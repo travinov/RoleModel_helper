@@ -8,6 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "install_rolemodel_helper_server.sh"
 REMOTE_DEPLOY_SCRIPT_PATH = REPO_ROOT / "scripts" / "deploy_rolemodel_helper_remote.sh"
+REQUIREMENTS_PATH = REPO_ROOT / "requirements.txt"
 
 
 class InstallScriptTest(unittest.TestCase):
@@ -80,6 +81,11 @@ class InstallScriptTest(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_python39_offline_requirements_include_marker_dependencies(self) -> None:
+        requirements = REQUIREMENTS_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("exceptiongroup", requirements)
 
 
 if __name__ == "__main__":
