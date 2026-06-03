@@ -895,14 +895,14 @@ class SearchRepository:
                     ar.alias_class,
                     ar.collision_count,
                     ar.alias_source,
-                    similarity(ar.alias_normalized, %s) AS alias_score,
-                    similarity(lower(s.system_name_raw), %s) AS system_score
+                    app_similarity(ar.alias_normalized, %s) AS alias_score,
+                    app_similarity(lower(s.system_name_raw), %s) AS system_score
                 FROM active_snapshot a
                 JOIN system s ON s.snapshot_id = a.id
                 LEFT JOIN alias_rows ar ON ar.system_id = s.id
                 ORDER BY GREATEST(
-                    COALESCE(similarity(ar.alias_normalized, %s), 0),
-                    similarity(lower(s.system_name_raw), %s)
+                    COALESCE(app_similarity(ar.alias_normalized, %s), 0),
+                    app_similarity(lower(s.system_name_raw), %s)
                 ) DESC,
                 s.system_name_raw ASC
                 """,
@@ -1014,13 +1014,13 @@ class SearchRepository:
                     ar.alias_class,
                     ar.collision_count,
                     ar.alias_source,
-                    similarity(coalesce(ar.alias_normalized, ''), %s) AS alias_score,
-                    similarity(lower(s.system_name_raw), %s) AS system_score
+                    app_similarity(coalesce(ar.alias_normalized, ''), %s) AS alias_score,
+                    app_similarity(lower(s.system_name_raw), %s) AS system_score
                 FROM active_snapshot a
                 JOIN system s ON s.snapshot_id = a.id
                 LEFT JOIN alias_rows ar ON ar.system_id = s.id
-                WHERE lower(s.system_name_raw) %% %s
-                   OR coalesce(ar.alias_normalized, '') %% %s
+                WHERE app_similarity(lower(s.system_name_raw), %s) >= 0.30
+                   OR app_similarity(coalesce(ar.alias_normalized, ''), %s) >= 0.30
                    OR lower(s.system_name_raw) LIKE ('%%' || %s || '%%')
                    OR coalesce(ar.alias_normalized, '') LIKE ('%%' || %s || '%%')
                 ORDER BY s.system_name_raw ASC
