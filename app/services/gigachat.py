@@ -34,6 +34,85 @@ class GigaChatClient:
             return self.config.gigachat_ca_bundle
         return self.config.gigachat_verify_ssl
 
+    def _cert_arg(self) -> tuple[str, str] | None:
+        if self.config.gigachat_cert_file and self.config.gigachat_key_file:
+            return (self.config.gigachat_cert_file, self.config.gigachat_key_file)
+        return None
+
+    def _uses_certificate_auth(self) -> bool:
+        return bool(self.config.gigachat_cert_file and self.config.gigachat_key_file)
+
+    @staticmethod
+    def _load_sdk_class():
+        try:
+            from gigachat import GigaChat
+        except ImportError as exc:
+            raise GigaChatError("GigaChat SDK is not installed; install package 'gigachat'") from exc
+        return GigaChat
+
+    def _sdk_client_kwargs(self) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "base_url": self.config.gigachat_base_url,
+            "cert_file": self.config.gigachat_cert_file,
+            "key_file": self.config.gigachat_key_file,
+            "verify_ssl_certs": self.config.gigachat_verify_ssl,
+            "model": self.config.gigachat_chat_model,
+            "timeout": self.config.gigachat_timeout_sec,
+        }
+        if self.config.gigachat_ca_bundle:
+            kwargs["ca_bundle_file"] = self.config.gigachat_ca_bundle
+        return {key: value for key, value in kwargs.items() if value is not None}
+
+    @staticmethod
+    def _prompt_from_messages(messages: list[dict[str, str]]) -> str:
+        chunks: list[str] = []
+        role_names = {
+            "system": "Системная инструкция",
+            "user": "Пользователь",
+            "assistant": "Ассистент",
+        }
+        for message in messages:
+            content = str(message.get("content") or "").strip()
+            if not content:
+                continue
+            role = role_names.get(str(message.get("role") or "").lower(), "Сообщение")
+            chunks.append(f"{role}: {content}")
+        return "\n\n".join(chunks).strip()
+
+    @staticmethod
+    def _extract_sdk_text(response: Any) -> str:
+        choices = getattr(response, "choices", None) or []
+        if not choices:
+            raise GigaChatError("GigaChat completion response does not contain choices")
+        message = getattr(choices[0], "message", None)
+        content = getattr(message, "content", None) if message is not None else None
+        if isinstance(content, list):
+            content = "".join(str(getattr(part, "text", "")) for part in content)
+        if not isinstance(content, str):
+            raise GigaChatError("GigaChat completion response does not contain textual content")
+        return content.strip()
+
+    def _chat_completion_with_sdk(
+        self,
+        messages: list[dict[str, str]],
+        model: Optional[str] = None,
+        temperature: float = 0.1,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        prompt = self._prompt_from_messages(messages)
+        if not prompt:
+            raise GigaChatError("GigaChat completion prompt is empty")
+        GigaChat = self._load_sdk_class()
+        kwargs = self._sdk_client_kwargs()
+        if model is not None:
+            kwargs["model"] = model
+        try:
+            with GigaChat(**kwargs) as client:
+                response = client.chat(prompt)
+        except Exception as exc:
+            raise GigaChatError(f"GigaChat completion request failed: {exc}") from exc
+        return self._extract_sdk_text(response)
+
     def _basic_authorization(self) -> Optional[str]:
         if self.config.gigachat_auth_key:
             return f"Basic {self.config.gigachat_auth_key}"
@@ -61,20 +140,24 @@ class GigaChatClient:
         if self.config.gigachat_access_token:
             return self.config.gigachat_access_token
         auth_header = self._basic_authorization()
-        if not auth_header:
+        cert_arg = self._cert_arg()
+        if not auth_header and not cert_arg:
             raise GigaChatError("GigaChat credentials are not configured")
+        headers = {
+            "RqUID": str(uuid.uuid4()),
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+        if auth_header:
+            headers["Authorization"] = auth_header
         try:
             response = self._session.post(
                 self.config.gigachat_auth_url,
-                headers={
-                    "Authorization": auth_header,
-                    "RqUID": str(uuid.uuid4()),
-                    "Accept": "application/json",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
+                headers=headers,
                 data={"scope": self.config.gigachat_scope},
                 timeout=self.config.gigachat_timeout_sec,
                 verify=self._verify_arg(),
+                cert=cert_arg,
             )
         except requests.RequestException as exc:
             raise GigaChatError(f"GigaChat token request failed: {exc}") from exc
@@ -112,6 +195,13 @@ class GigaChatClient:
     ) -> str:
         if not self.enabled:
             raise GigaChatError("GigaChat is disabled in configuration")
+        if self._uses_certificate_auth():
+            return self._chat_completion_with_sdk(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
         token = self._ensure_token()
         payload: dict[str, Any] = {
             "model": model or self.config.gigachat_chat_model,
@@ -135,6 +225,7 @@ class GigaChatClient:
                     json=payload,
                     timeout=self.config.gigachat_timeout_sec,
                     verify=self._verify_arg(),
+                    cert=self._cert_arg(),
                 )
             except requests.RequestException as exc:
                 if attempt_no >= 3:

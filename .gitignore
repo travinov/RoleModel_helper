@@ -2,6 +2,8 @@
 .env
 .venv/
 .rolemodel_wheelhouse/
+certs/gigachat/*
+!certs/gigachat/.gitkeep
 __pycache__/
 *.py[cod]
 .pytest_cache/

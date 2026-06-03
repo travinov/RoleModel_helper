@@ -40,18 +40,21 @@ export RM_APP_PORT=8000
 GigaChat settings (for intent parsing and static instruction answer synthesis):
 
 ```bash
-# Use either RM_GIGACHAT_AUTH_KEY or RM_GIGACHAT_CLIENT_ID + RM_GIGACHAT_CLIENT_SECRET.
-export RM_GIGACHAT_AUTH_KEY="<basic auth key>"
-# export RM_GIGACHAT_CLIENT_ID="<client id>"
-# export RM_GIGACHAT_CLIENT_SECRET="<client secret>"
-
-export RM_GIGACHAT_SCOPE=GIGACHAT_API_PERS
-export RM_GIGACHAT_CHAT_MODEL=GigaChat-2-Pro
-export RM_GIGACHAT_AUTH_URL=https://ngw.devices.sberbank.ru:9443/api/v2/oauth
-export RM_GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
-export RM_GIGACHAT_TIMEOUT_SEC=45
-export RM_GIGACHAT_VERIFY_SSL=true
+# Certificate authentication is the default deployment path.
+# Put files into the project directory:
+#   certs/gigachat/egress_sberca.crt  - client certificate
+#   certs/gigachat/egress_sberca.key  - client private key
+#   certs/gigachat/ca.pem             - optional CA bundle
+#
+# If you keep them elsewhere, set explicit absolute paths:
+# export RM_GIGACHAT_CERT_FILE="/absolute/path/to/egress_sberca.crt"
+# export RM_GIGACHAT_KEY_FILE="/absolute/path/to/egress_sberca.key"
 # export RM_GIGACHAT_CA_BUNDLE="/absolute/path/to/ca.pem"
+
+export RM_GIGACHAT_CHAT_MODEL=GigaChat-2-Max
+export RM_GIGACHAT_BASE_URL=https://gigachat-ift.sberdevices.delta.sbrf.ru/v1
+export RM_GIGACHAT_TIMEOUT_SEC=45
+export RM_GIGACHAT_VERIFY_SSL=false
 export RM_GIGACHAT_USE_FOR_INTENT=true
 export RM_GIGACHAT_USE_FOR_INSTRUCTION_ANSWER=true
 ```
