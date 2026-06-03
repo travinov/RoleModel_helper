@@ -8,6 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "install_rolemodel_helper_server.sh"
 REMOTE_DEPLOY_SCRIPT_PATH = REPO_ROOT / "scripts" / "deploy_rolemodel_helper_remote.sh"
+REMOTE_APP_UPDATE_SCRIPT_PATH = REPO_ROOT / "scripts" / "update_rolemodel_helper_app_remote.sh"
 REQUIREMENTS_PATH = REPO_ROOT / "requirements.txt"
 
 
@@ -76,6 +77,35 @@ class InstallScriptTest(unittest.TestCase):
     def test_remote_deploy_script_is_bash_syntax_valid(self) -> None:
         result = subprocess.run(
             ["bash", "-n", str(REMOTE_DEPLOY_SCRIPT_PATH)],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_remote_app_update_script_does_not_touch_database(self) -> None:
+        self.assertTrue(REMOTE_APP_UPDATE_SCRIPT_PATH.exists(), "missing app-only update script")
+        script = REMOTE_APP_UPDATE_SCRIPT_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru", script)
+        self.assertIn("RoleModelHelper2", script)
+        self.assertIn("scripts/update_rolemodel_helper_app_remote.sh", script)
+        self.assertIn("systemctl --user restart rolemodel-helper.service", script)
+        self.assertIn("certs/gigachat", script)
+        self.assertIn(".env.server", script)
+        self.assertIn("pip install", script)
+        self.assertIn("--no-index", script)
+        self.assertIn("--find-links", script)
+        self.assertNotIn("RM_DB_PASSWORD", script)
+        self.assertNotIn("rolemodel_etl db.init", script)
+        self.assertNotIn("rolemodel_etl load", script)
+        self.assertNotIn("DROP SCHEMA", script)
+
+    def test_remote_app_update_script_is_bash_syntax_valid(self) -> None:
+        result = subprocess.run(
+            ["bash", "-n", str(REMOTE_APP_UPDATE_SCRIPT_PATH)],
             cwd=str(REPO_ROOT),
             text=True,
             capture_output=True,

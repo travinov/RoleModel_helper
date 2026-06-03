@@ -32,6 +32,7 @@
   - The local deploy script prepares a Linux Python wheelhouse and uploads it with the app.
   - The server installer creates a Python virtual environment, installs `requirements.txt` from the uploaded wheelhouse when available, initializes DB schema, validates the bundled workbook, and loads it unless explicitly skipped.
   - `rolemodel_etl load` builds application-owned `search_document` and `search_ngram` tables, and runtime SQL uses them instead of `pg_trgm.similarity`, `app_similarity`, or the trigram `%` operator.
+  - A separate app-only update script uploads application files, installs dependencies, restarts the service, preserves certificates, and never connects to PostgreSQL.
   - The script checks whether all required schema tables exist before and after initialization.
   - The optional `--reset-db` mode drops the configured schema and recreates all DB objects from scratch.
   - The script creates an app env file and a runnable user-level service or fallback start script.
