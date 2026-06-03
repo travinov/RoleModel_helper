@@ -31,7 +31,7 @@
   - DB password is supplied through an environment variable or hidden interactive prompt.
   - The local deploy script prepares a Linux Python wheelhouse and uploads it with the app.
   - The server installer creates a Python virtual environment, installs `requirements.txt` from the uploaded wheelhouse when available, initializes DB schema, validates the bundled workbook, and loads it unless explicitly skipped.
-  - The DB schema installs application-owned `app_similarity(text, text)` and runtime SQL uses it instead of `pg_trgm.similarity` or the trigram `%` operator.
+  - `rolemodel_etl load` builds application-owned `search_document` and `search_ngram` tables, and runtime SQL uses them instead of `pg_trgm.similarity`, `app_similarity`, or the trigram `%` operator.
   - The script checks whether all required schema tables exist before and after initialization.
   - The optional `--reset-db` mode drops the configured schema and recreates all DB objects from scratch.
   - The script creates an app env file and a runnable user-level service or fallback start script.
