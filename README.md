@@ -130,8 +130,9 @@ and does not require local container runtime or the PostgreSQL `vector` extensio
 During installation it checks whether the configured PostgreSQL schema already
 contains all required tables, initializes missing objects, and verifies the
 schema again before loading the workbook.
-The schema installs an application-owned `app_similarity(text, text)` function,
-so runtime search does not require `EXECUTE` grants on `pg_trgm.similarity`.
+`rolemodel_etl load` builds application-owned `search_document` and
+`search_ngram` tables, so runtime search does not require `pg_trgm`,
+`gin_trgm_ops`, or `EXECUTE` grants on PostgreSQL trigram functions.
 
 For a full overwrite at the current setup stage, use:
 

@@ -1,51 +1,3 @@
-CREATE OR REPLACE FUNCTION app_similarity(left_text TEXT, right_text TEXT)
-RETURNS DOUBLE PRECISION
-LANGUAGE sql
-IMMUTABLE
-PARALLEL SAFE
-AS $$
-WITH normalized AS (
-    SELECT
-        lower(coalesce(left_text, '')) AS left_value,
-        lower(coalesce(right_text, '')) AS right_value
-),
-padded AS (
-    SELECT
-        '  ' || left_value || ' ' AS left_value,
-        '  ' || right_value || ' ' AS right_value
-    FROM normalized
-),
-left_grams AS (
-    SELECT DISTINCT substr(left_value, pos, 3) AS gram
-    FROM padded, generate_series(1, greatest(length(left_value) - 2, 0)) AS pos
-),
-right_grams AS (
-    SELECT DISTINCT substr(right_value, pos, 3) AS gram
-    FROM padded, generate_series(1, greatest(length(right_value) - 2, 0)) AS pos
-),
-counts AS (
-    SELECT
-        (SELECT count(*) FROM left_grams) AS left_count,
-        (SELECT count(*) FROM right_grams) AS right_count,
-        (
-            SELECT count(*)
-            FROM (
-                SELECT gram FROM left_grams
-                INTERSECT
-                SELECT gram FROM right_grams
-            ) common_grams
-        ) AS common_count
-)
-SELECT
-    CASE
-        WHEN left_text IS NULL OR right_text IS NULL THEN 0::DOUBLE PRECISION
-        WHEN lower(left_text) = lower(right_text) THEN 1::DOUBLE PRECISION
-        WHEN left_count + right_count = 0 THEN 0::DOUBLE PRECISION
-        ELSE (2.0 * common_count::DOUBLE PRECISION) / (left_count + right_count)::DOUBLE PRECISION
-    END
-FROM counts;
-$$;
-
 CREATE TABLE IF NOT EXISTS etl_run (
     id BIGSERIAL PRIMARY KEY,
     started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -222,6 +174,28 @@ CREATE TABLE IF NOT EXISTS department_alias_candidate (
     UNIQUE (snapshot_id, department_name, alias_normalized)
 );
 
+CREATE TABLE IF NOT EXISTS search_document (
+    id BIGSERIAL PRIMARY KEY,
+    snapshot_id BIGINT NOT NULL REFERENCES snapshot(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('SYSTEM')),
+    entity_id BIGINT NOT NULL REFERENCES system(id) ON DELETE CASCADE,
+    document_text TEXT NOT NULL,
+    normalized_text TEXT NOT NULL,
+    source_kind TEXT NOT NULL CHECK (source_kind IN ('SYSTEM_NAME', 'SYSTEM_ALIAS', 'SYSTEM_ALIAS_CANDIDATE')),
+    alias_source TEXT,
+    alias_class TEXT NOT NULL DEFAULT 'SAFE' CHECK (alias_class IN ('SAFE', 'AMBIGUOUS', 'UNSAFE')),
+    collision_count INTEGER NOT NULL DEFAULT 1 CHECK (collision_count >= 1),
+    gram_count INTEGER NOT NULL DEFAULT 0 CHECK (gram_count >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (snapshot_id, entity_type, entity_id, source_kind, normalized_text)
+);
+
+CREATE TABLE IF NOT EXISTS search_ngram (
+    document_id BIGINT NOT NULL REFERENCES search_document(id) ON DELETE CASCADE,
+    gram TEXT NOT NULL,
+    PRIMARY KEY (document_id, gram)
+);
+
 CREATE TABLE IF NOT EXISTS chat_session (
     id UUID PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -369,6 +343,9 @@ CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_snapshot_class ON system_a
 CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_norm ON system_alias_candidate (alias_normalized);
 CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_snapshot_class ON department_alias_candidate (snapshot_id, alias_class);
 CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_norm ON department_alias_candidate (alias_normalized);
+CREATE INDEX IF NOT EXISTS idx_search_document_snapshot_entity ON search_document (snapshot_id, entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_search_document_normalized ON search_document (normalized_text);
+CREATE INDEX IF NOT EXISTS idx_search_ngram_gram ON search_ngram (gram);
 CREATE INDEX IF NOT EXISTS idx_chat_message_session ON chat_message (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tool_call_log_session ON tool_call_log (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_candidate_set_session ON chat_candidate_set (session_id, created_at);
