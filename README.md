@@ -146,6 +146,18 @@ bash scripts/deploy_rolemodel_helper_remote.sh --reset-db
 `--reset-db` drops the configured schema `rolemodel_helper` with `CASCADE`,
 recreates it, and loads the bundled workbook from scratch.
 
+To update only the application code without touching PostgreSQL, run:
+
+```bash
+bash scripts/update_rolemodel_helper_app_remote.sh
+```
+
+This app-only update does not ask for the database password, does not run schema
+initialization, and does not validate or load the workbook. It preserves the
+remote `.env.server`, `logs/`, `uploads/`, `backups/`, and `certs/` directories,
+including `certs/gigachat/egress_sberca.crt` and
+`certs/gigachat/egress_sberca.key`.
+
 When the app runs on the remote server, `127.0.0.1` means "localhost on that
 server". From your local machine, open it through an SSH tunnel:
 
