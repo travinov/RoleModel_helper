@@ -1,4 +1,50 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE OR REPLACE FUNCTION app_similarity(left_text TEXT, right_text TEXT)
+RETURNS DOUBLE PRECISION
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+AS $$
+WITH normalized AS (
+    SELECT
+        lower(coalesce(left_text, '')) AS left_value,
+        lower(coalesce(right_text, '')) AS right_value
+),
+padded AS (
+    SELECT
+        '  ' || left_value || ' ' AS left_value,
+        '  ' || right_value || ' ' AS right_value
+    FROM normalized
+),
+left_grams AS (
+    SELECT DISTINCT substr(left_value, pos, 3) AS gram
+    FROM padded, generate_series(1, greatest(length(left_value) - 2, 0)) AS pos
+),
+right_grams AS (
+    SELECT DISTINCT substr(right_value, pos, 3) AS gram
+    FROM padded, generate_series(1, greatest(length(right_value) - 2, 0)) AS pos
+),
+counts AS (
+    SELECT
+        (SELECT count(*) FROM left_grams) AS left_count,
+        (SELECT count(*) FROM right_grams) AS right_count,
+        (
+            SELECT count(*)
+            FROM (
+                SELECT gram FROM left_grams
+                INTERSECT
+                SELECT gram FROM right_grams
+            ) common_grams
+        ) AS common_count
+)
+SELECT
+    CASE
+        WHEN left_text IS NULL OR right_text IS NULL THEN 0::DOUBLE PRECISION
+        WHEN lower(left_text) = lower(right_text) THEN 1::DOUBLE PRECISION
+        WHEN left_count + right_count = 0 THEN 0::DOUBLE PRECISION
+        ELSE (2.0 * common_count::DOUBLE PRECISION) / (left_count + right_count)::DOUBLE PRECISION
+    END
+FROM counts;
+$$;
 
 CREATE TABLE IF NOT EXISTS etl_run (
     id BIGSERIAL PRIMARY KEY,
@@ -318,11 +364,11 @@ CREATE INDEX IF NOT EXISTS idx_system_snapshot ON system (snapshot_id);
 CREATE INDEX IF NOT EXISTS idx_entitlement_type ON entitlement (entitlement_type);
 CREATE INDEX IF NOT EXISTS idx_pea_snapshot_level ON profile_entitlement_access (snapshot_id, access_level);
 CREATE INDEX IF NOT EXISTS idx_etl_error_run_id ON etl_error (run_id);
-CREATE INDEX IF NOT EXISTS idx_system_alias_norm ON system_alias USING GIN (alias_normalized gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_system_alias_norm ON system_alias (alias_normalized);
 CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_snapshot_class ON system_alias_candidate (snapshot_id, alias_class);
-CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_norm ON system_alias_candidate USING GIN (alias_normalized gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_norm ON system_alias_candidate (alias_normalized);
 CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_snapshot_class ON department_alias_candidate (snapshot_id, alias_class);
-CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_norm ON department_alias_candidate USING GIN (alias_normalized gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_norm ON department_alias_candidate (alias_normalized);
 CREATE INDEX IF NOT EXISTS idx_chat_message_session ON chat_message (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tool_call_log_session ON tool_call_log (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_candidate_set_session ON chat_candidate_set (session_id, created_at);
@@ -432,4 +478,3 @@ CREATE INDEX IF NOT EXISTS idx_mv_access_search_ci_code ON mv_access_search_acti
 CREATE INDEX IF NOT EXISTS idx_mv_access_search_access_level ON mv_access_search_active (access_level);
 CREATE INDEX IF NOT EXISTS idx_mv_access_search_ent_type ON mv_access_search_active (entitlement_type);
 CREATE INDEX IF NOT EXISTS idx_mv_access_search_tsv ON mv_access_search_active USING GIN (search_tsv);
-CREATE INDEX IF NOT EXISTS idx_mv_access_search_text_trgm ON mv_access_search_active USING GIN (search_text gin_trgm_ops);
