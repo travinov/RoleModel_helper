@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import threading
 import unittest
-from unittest.mock import patch
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from app.config import AppConfig
 from app.services.gigachat import GigaChatClient
@@ -88,6 +90,42 @@ class GigaChatCertificateAuthTest(unittest.TestCase):
         self.assertEqual(created_clients[0]["base_url"], "https://gigachat-ift.sberdevices.delta.sbrf.ru/v1")
         self.assertEqual(created_clients[0]["model"], "GigaChat-2-Max")
         self.assertFalse(created_clients[0]["verify_ssl_certs"])
+
+    def test_certificate_auth_creates_event_loop_for_worker_thread(self) -> None:
+        class FakeGigaChat:
+            def __init__(self, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return None
+
+            def chat(self, prompt):
+                asyncio.get_event_loop()
+                return SimpleNamespace(
+                    choices=[SimpleNamespace(message=SimpleNamespace(content="ok from worker"))]
+                )
+
+        client = GigaChatClient(_config())
+        result: list[str] = []
+        errors: list[BaseException] = []
+
+        def run_in_worker() -> None:
+            try:
+                with patch.object(GigaChatClient, "_load_sdk_class", return_value=FakeGigaChat):
+                    result.append(client.chat_completion([{"role": "user", "content": "ping"}]))
+            except BaseException as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=run_in_worker)
+        thread.start()
+        thread.join(timeout=5)
+
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(result, ["ok from worker"])
 
     def test_access_token_without_certificates_keeps_legacy_requests_path(self) -> None:
         client = GigaChatClient(

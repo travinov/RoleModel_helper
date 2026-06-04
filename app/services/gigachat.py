@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import threading
@@ -41,6 +42,18 @@ class GigaChatClient:
 
     def _uses_certificate_auth(self) -> bool:
         return bool(self.config.gigachat_cert_file and self.config.gigachat_key_file)
+
+    @staticmethod
+    def _ensure_thread_event_loop() -> asyncio.AbstractEventLoop | None:
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError as exc:
+            if "There is no current event loop" not in str(exc):
+                raise
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop
+        return None
 
     @staticmethod
     def _load_sdk_class():
@@ -106,11 +119,17 @@ class GigaChatClient:
         kwargs = self._sdk_client_kwargs()
         if model is not None:
             kwargs["model"] = model
+        created_loop = None
         try:
+            created_loop = self._ensure_thread_event_loop()
             with GigaChat(**kwargs) as client:
                 response = client.chat(prompt)
         except Exception as exc:
             raise GigaChatError(f"GigaChat completion request failed: {exc}") from exc
+        finally:
+            if created_loop is not None:
+                asyncio.set_event_loop(None)
+                created_loop.close()
         return self._extract_sdk_text(response)
 
     def _basic_authorization(self) -> Optional[str]:
