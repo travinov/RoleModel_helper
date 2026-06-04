@@ -30,6 +30,7 @@ class AppConfig:
     db: DBConfig
     app_host: str = "127.0.0.1"
     app_port: int = 8000
+    pg_trgm_schema: str = "ext"
     gigachat_auth_url: str = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     gigachat_base_url: str = "https://gigachat-ift.sberdevices.delta.sbrf.ru/v1"
     gigachat_scope: str = "GIGACHAT_API_PERS"
@@ -60,6 +61,7 @@ class AppConfig:
             ),
             app_host=os.getenv("RM_APP_HOST", "127.0.0.1"),
             app_port=int(os.getenv("RM_APP_PORT", "8000")),
+            pg_trgm_schema=os.getenv("RM_PG_TRGM_SCHEMA", "ext"),
             gigachat_auth_url=os.getenv(
                 "RM_GIGACHAT_AUTH_URL",
                 "https://ngw.devices.sberbank.ru:9443/api/v2/oauth",

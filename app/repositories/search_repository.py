@@ -5,11 +5,11 @@ import uuid
 from datetime import date
 from typing import Any, Optional
 
+from psycopg2 import sql
 from psycopg2.extras import Json
 
 from app.models.domain import CandidateSet, ToolAttempt, TurnInterpretation
 from app.services.text import normalize_text, similarity
-from rolemodel_etl.search_index import build_search_ngrams
 
 from ..config import AppConfig
 from ..db import db_cursor
@@ -49,6 +49,10 @@ _SYSTEM_STOP_TOKENS = {
     "ci",
     "пкап",
 }
+
+
+def _pg_trgm_similarity(config: AppConfig) -> sql.Composed:
+    return sql.SQL("{}.similarity").format(sql.Identifier(config.pg_trgm_schema))
 
 
 def _token_set(value: str | None) -> set[str]:
@@ -843,7 +847,6 @@ class SearchRepository:
 
     def upsert_alias(self, system_id: int, alias_text: str, alias_source: str = "MANUAL") -> None:
         alias_norm = normalize_text(alias_text)
-        alias_grams = list(build_search_ngrams(alias_norm))
         with db_cursor(self.config) as (_, cursor):
             cursor.execute(
                 """
@@ -857,66 +860,15 @@ class SearchRepository:
                 """,
                 (system_id, alias_text, alias_norm, alias_source),
             )
-            if not alias_norm or not alias_grams:
-                return
-            cursor.execute(
-                """
-                SELECT s.snapshot_id
-                FROM system s
-                JOIN snapshot snap ON snap.id = s.snapshot_id
-                WHERE s.id = %s
-                  AND snap.is_active = TRUE
-                LIMIT 1
-                """,
-                (system_id,),
-            )
-            snapshot_row = cursor.fetchone()
-            if not snapshot_row:
-                return
-            cursor.execute(
-                """
-                INSERT INTO search_document (
-                    snapshot_id,
-                    entity_type,
-                    entity_id,
-                    document_text,
-                    normalized_text,
-                    source_kind,
-                    alias_source,
-                    alias_class,
-                    collision_count,
-                    gram_count
-                )
-                VALUES (%s, 'SYSTEM', %s, %s, %s, 'SYSTEM_ALIAS', %s, 'SAFE', 1, %s)
-                ON CONFLICT (snapshot_id, entity_type, entity_id, source_kind, normalized_text)
-                DO UPDATE SET
-                    document_text = EXCLUDED.document_text,
-                    alias_source = EXCLUDED.alias_source,
-                    alias_class = EXCLUDED.alias_class,
-                    collision_count = EXCLUDED.collision_count,
-                    gram_count = EXCLUDED.gram_count
-                RETURNING id
-                """,
-                (int(snapshot_row["snapshot_id"]), system_id, alias_text, alias_norm, alias_source, len(alias_grams)),
-            )
-            document_id = int(cursor.fetchone()["id"])
-            cursor.execute("DELETE FROM search_ngram WHERE document_id = %s", (document_id,))
-            cursor.executemany(
-                """
-                INSERT INTO search_ngram (document_id, gram)
-                VALUES (%s, %s)
-                ON CONFLICT DO NOTHING
-                """,
-                [(document_id, gram) for gram in alias_grams],
-            )
 
     def resolve_system_candidates(self, query_text: str, limit: int = 5) -> list[dict[str, Any]]:
         query_norm = normalize_text(query_text)
-        query_grams = list(build_search_ngrams(query_norm))
-        if not query_norm or not query_grams:
+        if not query_norm:
             return []
+        pg_trgm_similarity = _pg_trgm_similarity(self.config)
         with db_cursor(self.config) as (_, cursor):
             cursor.execute(
+                sql.SQL(
                 """
                 WITH active_snapshot AS (
                     SELECT id
@@ -925,62 +877,49 @@ class SearchRepository:
                     ORDER BY loaded_at DESC, id DESC
                     LIMIT 1
                 ),
-                document_scores AS (
+                alias_rows AS (
                     SELECT
-                        sd.entity_id AS system_id,
-                        sd.document_text,
-                        sd.normalized_text,
-                        sd.source_kind,
-                        sd.alias_source,
-                        sd.alias_class,
-                        sd.collision_count,
-                        sd.gram_count,
-                        COUNT(DISTINCT sn.gram) AS common_grams,
-                        CASE
-                            WHEN sd.normalized_text = %s THEN 1.0::double precision
-                            WHEN sd.normalized_text LIKE ('%%' || %s || '%%') THEN 0.92::double precision
-                            WHEN %s LIKE ('%%' || sd.normalized_text || '%%') AND length(sd.normalized_text) >= 3 THEN 0.88::double precision
-                            WHEN sd.gram_count + %s = 0 THEN 0.0::double precision
-                            ELSE (2.0 * COUNT(DISTINCT sn.gram)::double precision) / (sd.gram_count + %s)::double precision
-                        END AS index_score
-                    FROM active_snapshot a
-                    JOIN search_document sd ON sd.snapshot_id = a.id AND sd.entity_type = 'SYSTEM'
-                    LEFT JOIN search_ngram sn ON sn.document_id = sd.id AND sn.gram = ANY(%s::text[])
-                    WHERE sd.normalized_text LIKE ('%%' || %s || '%%')
-                       OR %s LIKE ('%%' || sd.normalized_text || '%%')
-                       OR sn.gram IS NOT NULL
-                    GROUP BY
-                        sd.entity_id,
-                        sd.document_text,
-                        sd.normalized_text,
-                        sd.source_kind,
-                        sd.alias_source,
-                        sd.alias_class,
-                        sd.collision_count,
-                        sd.gram_count
+                        sa.system_id,
+                        sa.alias_text,
+                        sa.alias_normalized,
+                        sa.alias_source,
+                        'SAFE'::text AS alias_class,
+                        1::integer AS collision_count
+                    FROM system_alias sa
+                    WHERE sa.is_active = TRUE
+                    UNION ALL
+                    SELECT
+                        sac.system_id,
+                        sac.alias_text,
+                        sac.alias_normalized,
+                        sac.alias_source,
+                        sac.alias_class,
+                        sac.collision_count
+                    FROM system_alias_candidate sac
                 )
                 SELECT
                     s.id AS system_id,
                     s.system_name_raw,
                     s.ci_code,
-                    ds.document_text AS alias_text,
-                    ds.alias_class,
-                    ds.collision_count,
-                    ds.alias_source,
-                    ds.index_score AS alias_score,
-                    CASE WHEN ds.source_kind = 'SYSTEM_NAME' THEN ds.index_score ELSE 0.0::double precision END AS system_score
-                FROM document_scores ds
-                JOIN system s ON s.id = ds.system_id
-                ORDER BY ds.index_score DESC,
+                    ar.alias_text,
+                    ar.alias_class,
+                    ar.collision_count,
+                    ar.alias_source,
+                    {similarity}(ar.alias_normalized, %s) AS alias_score,
+                    {similarity}(lower(s.system_name_raw), %s) AS system_score
+                FROM active_snapshot a
+                JOIN system s ON s.snapshot_id = a.id
+                LEFT JOIN alias_rows ar ON ar.system_id = s.id
+                ORDER BY GREATEST(
+                    COALESCE({similarity}(ar.alias_normalized, %s), 0),
+                    {similarity}(lower(s.system_name_raw), %s)
+                ) DESC,
                 s.system_name_raw ASC
                 """,
+                ).format(similarity=pg_trgm_similarity),
                 (
                     query_norm,
                     query_norm,
-                    query_norm,
-                    len(query_grams),
-                    len(query_grams),
-                    query_grams,
                     query_norm,
                     query_norm,
                 ),
@@ -1008,7 +947,7 @@ class SearchRepository:
             current = deduped.get(int(row["system_id"]))
             if current is None or score > float(current["score"]):
                 row["score"] = score
-                row["matched_by"] = structured_score.get("matched_by") or ["search_index"]
+                row["matched_by"] = structured_score.get("matched_by") or ["pg_trgm"]
                 row["alias_class"] = alias_class
                 row["collision_count"] = int(row.get("collision_count") or 1)
                 deduped[int(row["system_id"])] = row
@@ -1023,9 +962,9 @@ class SearchRepository:
         limit: int = 25,
     ) -> list[dict[str, Any]]:
         query_norm = normalize_text(query_text)
-        query_grams = list(build_search_ngrams(query_norm))
         if not query_norm:
             return []
+        pg_trgm_similarity = _pg_trgm_similarity(self.config)
 
         profile_ids: list[int] = []
         if city and department and position:
@@ -1051,6 +990,7 @@ class SearchRepository:
                     for row in cursor.fetchall()
                 }
             cursor.execute(
+                sql.SQL(
                 """
                 WITH active_snapshot AS (
                     SELECT id
@@ -1059,61 +999,51 @@ class SearchRepository:
                     ORDER BY loaded_at DESC, id DESC
                     LIMIT 1
                 ),
-                document_scores AS (
+                alias_rows AS (
                     SELECT
-                        sd.entity_id AS system_id,
-                        sd.document_text,
-                        sd.normalized_text,
-                        sd.source_kind,
-                        sd.alias_source,
-                        sd.alias_class,
-                        sd.collision_count,
-                        sd.gram_count,
-                        COUNT(DISTINCT sn.gram) AS common_grams,
-                        CASE
-                            WHEN sd.normalized_text = %s THEN 1.0::double precision
-                            WHEN sd.normalized_text LIKE ('%%' || %s || '%%') THEN 0.92::double precision
-                            WHEN %s LIKE ('%%' || sd.normalized_text || '%%') AND length(sd.normalized_text) >= 3 THEN 0.88::double precision
-                            WHEN sd.gram_count + %s = 0 THEN 0.0::double precision
-                            ELSE (2.0 * COUNT(DISTINCT sn.gram)::double precision) / (sd.gram_count + %s)::double precision
-                        END AS index_score
-                    FROM active_snapshot a
-                    JOIN search_document sd ON sd.snapshot_id = a.id AND sd.entity_type = 'SYSTEM'
-                    LEFT JOIN search_ngram sn ON sn.document_id = sd.id AND sn.gram = ANY(%s::text[])
-                    WHERE sd.normalized_text LIKE ('%%' || %s || '%%')
-                       OR %s LIKE ('%%' || sd.normalized_text || '%%')
-                       OR sn.gram IS NOT NULL
-                    GROUP BY
-                        sd.entity_id,
-                        sd.document_text,
-                        sd.normalized_text,
-                        sd.source_kind,
-                        sd.alias_source,
-                        sd.alias_class,
-                        sd.collision_count,
-                        sd.gram_count
+                        sa.system_id,
+                        sa.alias_text,
+                        sa.alias_normalized,
+                        sa.alias_source,
+                        'SAFE'::text AS alias_class,
+                        1::integer AS collision_count
+                    FROM system_alias sa
+                    WHERE sa.is_active = TRUE
+                    UNION ALL
+                    SELECT
+                        sac.system_id,
+                        sac.alias_text,
+                        sac.alias_normalized,
+                        sac.alias_source,
+                        sac.alias_class,
+                        sac.collision_count
+                    FROM system_alias_candidate sac
                 )
                 SELECT
                     s.id AS system_id,
                     s.system_name_raw,
                     s.ci_code,
-                    ds.document_text AS alias_text,
-                    ds.alias_class,
-                    ds.collision_count,
-                    ds.alias_source,
-                    ds.index_score AS alias_score,
-                    CASE WHEN ds.source_kind = 'SYSTEM_NAME' THEN ds.index_score ELSE 0.0::double precision END AS system_score
-                FROM document_scores ds
-                JOIN system s ON s.id = ds.system_id
+                    ar.alias_text,
+                    ar.alias_class,
+                    ar.collision_count,
+                    ar.alias_source,
+                    {similarity}(coalesce(ar.alias_normalized, ''), %s) AS alias_score,
+                    {similarity}(lower(s.system_name_raw), %s) AS system_score
+                FROM active_snapshot a
+                JOIN system s ON s.snapshot_id = a.id
+                LEFT JOIN alias_rows ar ON ar.system_id = s.id
+                WHERE {similarity}(lower(s.system_name_raw), %s) >= 0.30
+                   OR {similarity}(coalesce(ar.alias_normalized, ''), %s) >= 0.30
+                   OR lower(s.system_name_raw) LIKE ('%%' || %s || '%%')
+                   OR coalesce(ar.alias_normalized, '') LIKE ('%%' || %s || '%%')
                 ORDER BY s.system_name_raw ASC
                 """,
+                ).format(similarity=pg_trgm_similarity),
                 (
                     query_norm,
                     query_norm,
                     query_norm,
-                    len(query_grams),
-                    len(query_grams),
-                    query_grams,
+                    query_norm,
                     query_norm,
                     query_norm,
                 ),
@@ -1163,7 +1093,7 @@ class SearchRepository:
                 "profiles_count": access_counts.get(system_id, 0),
                 "exact_match": exact_match,
                 "strong_match": strong_match,
-                "matched_by": structured_score.get("matched_by") or ["search_index"],
+                "matched_by": structured_score.get("matched_by") or ["pg_trgm"],
             }
             current = ranked.get(system_id)
             if current is None:

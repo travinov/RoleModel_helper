@@ -31,7 +31,7 @@
   - DB password is supplied through an environment variable or hidden interactive prompt.
   - The local deploy script prepares a Linux Python wheelhouse and uploads it with the app.
   - The server installer creates a Python virtual environment, installs `requirements.txt` from the uploaded wheelhouse when available, initializes DB schema, validates the bundled workbook, and loads it unless explicitly skipped.
-  - `rolemodel_etl load` builds application-owned `search_document` and `search_ngram` tables, and runtime SQL uses them instead of `pg_trgm.similarity`, `app_similarity`, or the trigram `%` operator.
+  - Runtime system lookup uses DBA-managed `pg_trgm` through `RM_PG_TRGM_SCHEMA` (default `ext`) and calls `<schema>.similarity(text, text)` directly.
   - A separate app-only update script uploads application files, installs dependencies, restarts the service, preserves certificates, and never connects to PostgreSQL.
   - The script checks whether all required schema tables exist before and after initialization.
   - The optional `--reset-db` mode drops the configured schema and recreates all DB objects from scratch.
@@ -43,7 +43,7 @@
   - Preserve direct-IP DB host use; do not substitute hostname.
   - Require an explicit `--reset-db` flag for destructive DB overwrite.
   - Do not require outbound PyPI access from the app server when the local deploy path is used.
-  - Do not require DBA `EXECUTE` grants on `pg_trgm` runtime functions.
+  - Require DBA `EXECUTE` grants on the `pg_trgm` similarity function in the configured extension schema.
 - Operational constraints:
   - Work without local Docker.
   - Work when the app server cannot reach PyPI directly.

@@ -133,9 +133,11 @@ and does not require local container runtime or the PostgreSQL `vector` extensio
 During installation it checks whether the configured PostgreSQL schema already
 contains all required tables, initializes missing objects, and verifies the
 schema again before loading the workbook.
-`rolemodel_etl load` builds application-owned `search_document` and
-`search_ngram` tables, so runtime search does not require `pg_trgm`,
-`gin_trgm_ops`, or `EXECUTE` grants on PostgreSQL trigram functions.
+Runtime system search uses DBA-managed PostgreSQL `pg_trgm` functions from the
+extension schema. The default extension schema is `ext`; override it with
+`RM_PG_TRGM_SCHEMA` if DBA installs `pg_trgm` elsewhere. The app calls
+`<schema>.similarity(text, text)` directly and does not require `pg_trgm` to be
+installed in the application schema.
 
 For a full overwrite at the current setup stage, use:
 

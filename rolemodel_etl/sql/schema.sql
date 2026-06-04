@@ -174,28 +174,6 @@ CREATE TABLE IF NOT EXISTS department_alias_candidate (
     UNIQUE (snapshot_id, department_name, alias_normalized)
 );
 
-CREATE TABLE IF NOT EXISTS search_document (
-    id BIGSERIAL PRIMARY KEY,
-    snapshot_id BIGINT NOT NULL REFERENCES snapshot(id) ON DELETE CASCADE,
-    entity_type TEXT NOT NULL CHECK (entity_type IN ('SYSTEM')),
-    entity_id BIGINT NOT NULL REFERENCES system(id) ON DELETE CASCADE,
-    document_text TEXT NOT NULL,
-    normalized_text TEXT NOT NULL,
-    source_kind TEXT NOT NULL CHECK (source_kind IN ('SYSTEM_NAME', 'SYSTEM_ALIAS', 'SYSTEM_ALIAS_CANDIDATE')),
-    alias_source TEXT,
-    alias_class TEXT NOT NULL DEFAULT 'SAFE' CHECK (alias_class IN ('SAFE', 'AMBIGUOUS', 'UNSAFE')),
-    collision_count INTEGER NOT NULL DEFAULT 1 CHECK (collision_count >= 1),
-    gram_count INTEGER NOT NULL DEFAULT 0 CHECK (gram_count >= 0),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (snapshot_id, entity_type, entity_id, source_kind, normalized_text)
-);
-
-CREATE TABLE IF NOT EXISTS search_ngram (
-    document_id BIGINT NOT NULL REFERENCES search_document(id) ON DELETE CASCADE,
-    gram TEXT NOT NULL,
-    PRIMARY KEY (document_id, gram)
-);
-
 CREATE TABLE IF NOT EXISTS chat_session (
     id UUID PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -343,9 +321,6 @@ CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_snapshot_class ON system_a
 CREATE INDEX IF NOT EXISTS idx_system_alias_candidate_norm ON system_alias_candidate (alias_normalized);
 CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_snapshot_class ON department_alias_candidate (snapshot_id, alias_class);
 CREATE INDEX IF NOT EXISTS idx_department_alias_candidate_norm ON department_alias_candidate (alias_normalized);
-CREATE INDEX IF NOT EXISTS idx_search_document_snapshot_entity ON search_document (snapshot_id, entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_search_document_normalized ON search_document (normalized_text);
-CREATE INDEX IF NOT EXISTS idx_search_ngram_gram ON search_ngram (gram);
 CREATE INDEX IF NOT EXISTS idx_chat_message_session ON chat_message (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_tool_call_log_session ON tool_call_log (session_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_candidate_set_session ON chat_candidate_set (session_id, created_at);
