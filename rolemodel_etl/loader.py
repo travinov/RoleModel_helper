@@ -8,7 +8,6 @@ from typing import Optional
 from .config import DBConfig
 from .db import get_connection, read_schema_sql
 from .models import ParseResult
-from .search_index import rebuild_system_search_index
 
 
 def file_sha256(path: str | Path) -> str:
@@ -277,7 +276,6 @@ def init_db(config: DBConfig) -> None:
             row = cursor.fetchone()
             if row:
                 _seed_reference_alias_candidates(cursor, int(row[0]))
-                rebuild_system_search_index(cursor, int(row[0]))
     finally:
         conn.close()
 
@@ -672,7 +670,6 @@ def load_to_db(config: DBConfig, parsed: ParseResult, snapshot_label: Optional[s
                 )
 
             _seed_reference_alias_candidates(cursor, snapshot_id)
-            rebuild_system_search_index(cursor, snapshot_id)
 
             cursor.execute("UPDATE snapshot SET is_active = FALSE WHERE is_active = TRUE")
             cursor.execute("UPDATE snapshot SET is_active = TRUE WHERE id = %s", (snapshot_id,))
