@@ -421,6 +421,7 @@ class FakeSearchRepository:
                 "dialog_act": interpretation.dialog_act,
                 "intent_type": interpretation.intent_type,
                 "entities": interpretation.entities,
+                "reasoning_trace_short": interpretation.reasoning_trace_short,
             }
         )
 
@@ -1155,6 +1156,69 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(interpretation.dialog_act, "ASK_HELP")
         self.assertEqual(interpretation.intent_type, "UNKNOWN")
         self.assertEqual(interpretation.entities, {})
+
+    def test_gigachat_failure_returns_retryable_service_message(self) -> None:
+        def fail_complete_json(system_prompt: str, user_prompt: str, model=None, max_tokens=None):
+            raise RuntimeError("GigaChat unavailable")
+
+        self.agent.gigachat.complete_json = fail_complete_json
+        initial_state = dict(self.repo.get_slot_state("s1"))
+
+        response = self.agent.handle_message("s1", "Какие роли доступны в ЕФС?")
+
+        self.assertEqual(response.intent_type, "UNKNOWN")
+        self.assertEqual(response.dialog_act, "LLM_UNAVAILABLE")
+        self.assertIn("GigaChat временно недоступен", response.assistant_text)
+        self.assertIn("повторите запрос", response.assistant_text.lower())
+        retry_actions = [action for action in response.suggested_actions if action.id == "retry_request"]
+        self.assertEqual(len(retry_actions), 1)
+        self.assertEqual(retry_actions[0].text, "Какие роли доступны в ЕФС?")
+        self.assertEqual(self.repo.get_slot_state("s1"), initial_state)
+        self.assertFalse(
+            any(turn.get("reasoning_trace_short") == "fallback_without_llm" for turn in self.repo.turns)
+        )
+
+    def test_disabled_gigachat_intent_returns_retryable_service_message(self) -> None:
+        self.agent.config.gigachat_use_for_intent = False
+
+        response = self.agent.handle_message("s1", "Какие роли доступны в ЕФС?")
+
+        self.assertEqual(response.intent_type, "UNKNOWN")
+        self.assertEqual(response.dialog_act, "LLM_UNAVAILABLE")
+        self.assertIn("GigaChat временно недоступен", response.assistant_text)
+        self.assertFalse(
+            any(turn.get("reasoning_trace_short") == "fallback_without_llm" for turn in self.repo.turns)
+        )
+
+    def test_gigachat_classifier_failure_returns_retryable_service_message(self) -> None:
+        calls = {"count": 0}
+
+        def scripted_complete_json(system_prompt: str, user_prompt: str, model=None, max_tokens=None):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                return {
+                    "dialog_act": "PROVIDE_SLOT",
+                    "intent_type": "ROLE_DISCOVERY",
+                    "entities": {"system_raw": "ЕФС"},
+                    "slot_candidates": {},
+                    "context_shift": "NONE",
+                    "confidence": 0.9,
+                    "goal_transition": "START",
+                    "needs_clarification": False,
+                    "references_pending_question": False,
+                    "user_correction": False,
+                    "reasoning_trace_short": "initial_llm_ok",
+                }
+            raise RuntimeError("GigaChat classifier unavailable")
+
+        self.agent.gigachat.complete_json = scripted_complete_json
+
+        response = self.agent.handle_message("s1", "Какие роли доступны в ЕФС?")
+
+        self.assertEqual(response.intent_type, "UNKNOWN")
+        self.assertEqual(response.dialog_act, "LLM_UNAVAILABLE")
+        self.assertIn("GigaChat временно недоступен", response.assistant_text)
+        self.assertEqual(self.repo.turns, [])
 
     def test_role_discovery_paraphrases_keep_same_initial_route(self) -> None:
         self.repo.system_browse_map["ЕФС"] = [

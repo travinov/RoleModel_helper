@@ -1,0 +1,425 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Export successful RoleModel Helper dialogues from the corporate app server.
+#
+# Run from this repository root after corporate VPN/network access is available:
+#   bash scripts/export_successful_corporate_dialogues.sh
+#
+# Defaults:
+#   App server: CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru
+#   Remote dir: ~/RoleModelHelper2
+#   Output: tests/fixtures/dialogue_success_from_corporate_server_YYYY-MM-DD.json
+
+DEFAULT_APP_SSH_TARGET="CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru"
+DEFAULT_APP_REMOTE_DIR="RoleModelHelper2"
+DEFAULT_OUTPUT="tests/fixtures/dialogue_success_from_corporate_server_$(date +%F).json"
+
+APP_SSH_TARGET="${APP_SSH_TARGET:-$DEFAULT_APP_SSH_TARGET}"
+APP_REMOTE_DIR="${APP_REMOTE_DIR:-$DEFAULT_APP_REMOTE_DIR}"
+OUTPUT_PATH="${OUTPUT_PATH:-$DEFAULT_OUTPUT}"
+
+usage() {
+  cat <<'USAGE'
+Export successful RoleModel Helper dialogues from the corporate server.
+
+Usage:
+  bash scripts/export_successful_corporate_dialogues.sh [options]
+
+Options:
+  --target SSH_TARGET      SSH target. Default:
+                           CI09479675-lnx-travinov@tsles-assai0001.esrt.sber.ru
+  --remote-dir DIR         Remote app dir. Default: RoleModelHelper2
+  --output PATH            Local JSON output path.
+                           Default: tests/fixtures/dialogue_success_from_corporate_server_YYYY-MM-DD.json
+  -h, --help               Show help.
+
+Selection filter:
+  - feedback UP exists
+  - feedback DOWN absent
+  - no chat_turn_interpretation.reasoning_trace_short = fallback_without_llm
+  - no tool_call_log status = error
+  - at least one successful gigachat_* tool call
+
+The script is read-only for production data. It writes one temporary JSON file
+under /tmp on the remote server, then copies it to the local output path.
+USAGE
+}
+
+log() {
+  printf '[rolemodel-export] %s\n' "$*"
+}
+
+fail() {
+  printf '[rolemodel-export] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+shell_quote() {
+  local value="$1"
+  printf "'"
+  printf "%s" "$value" | sed "s/'/'\\\\''/g"
+  printf "'"
+}
+
+while (($#)); do
+  case "$1" in
+    --target)
+      [[ $# -ge 2 ]] || fail "--target requires SSH_TARGET"
+      APP_SSH_TARGET="$2"
+      shift 2
+      ;;
+    --remote-dir)
+      [[ $# -ge 2 ]] || fail "--remote-dir requires DIR"
+      APP_REMOTE_DIR="$2"
+      shift 2
+      ;;
+    --output)
+      [[ $# -ge 2 ]] || fail "--output requires PATH"
+      OUTPUT_PATH="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "unknown option: $1"
+      ;;
+  esac
+done
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+REMOTE_OUTPUT="/tmp/rolemodel_successful_corporate_dialogues_$(date +%Y%m%d_%H%M%S).json"
+REMOTE_DIR_Q="$(shell_quote "$APP_REMOTE_DIR")"
+REMOTE_OUTPUT_Q="$(shell_quote "$REMOTE_OUTPUT")"
+
+log "Checking SSH target: $APP_SSH_TARGET"
+ssh -o BatchMode=yes -o ConnectTimeout=15 "$APP_SSH_TARGET" "hostname >/dev/null" \
+  || fail "cannot connect to $APP_SSH_TARGET. Connect corporate VPN/network and retry."
+
+log "Exporting successful dialogues from $APP_REMOTE_DIR"
+ssh "$APP_SSH_TARGET" "APP_REMOTE_DIR=$REMOTE_DIR_Q REMOTE_OUTPUT=$REMOTE_OUTPUT_Q bash -s" <<'REMOTE_SCRIPT'
+set -Eeuo pipefail
+
+cd "$APP_REMOTE_DIR"
+
+if [[ -f .env.server ]]; then
+  ENV_FILE=".env.server"
+elif [[ -f .env ]]; then
+  ENV_FILE=".env"
+else
+  echo "No .env.server or .env found in $APP_REMOTE_DIR" >&2
+  exit 1
+fi
+
+if [[ ! -x .venv/bin/python ]]; then
+  echo "Python venv not found: $APP_REMOTE_DIR/.venv/bin/python" >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+.venv/bin/python - <<'PY'
+from __future__ import annotations
+
+import json
+import os
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from app.config import AppConfig
+from app.db import db_cursor
+
+cfg = AppConfig.from_env()
+out_path = Path(os.environ["REMOTE_OUTPUT"])
+
+CLEAN_SESSIONS_SQL = """
+WITH msg AS (
+  SELECT session_id,
+         count(*) FILTER (WHERE role='USER') AS user_turns,
+         count(*) FILTER (WHERE role='ASSISTANT') AS assistant_turns
+  FROM chat_message
+  GROUP BY session_id
+), fb AS (
+  SELECT session_id,
+         count(*) FILTER (WHERE rating='UP') AS up_count,
+         count(*) FILTER (WHERE rating='DOWN') AS down_count
+  FROM chat_session_feedback
+  GROUP BY session_id
+), ti AS (
+  SELECT session_id,
+         count(*) FILTER (WHERE reasoning_trace_short='fallback_without_llm') AS fallback_count
+  FROM chat_turn_interpretation
+  GROUP BY session_id
+), tools AS (
+  SELECT session_id,
+         count(*) FILTER (WHERE status='error') AS tool_error_count,
+         count(*) FILTER (WHERE tool_name LIKE 'gigachat_%' AND status='success') AS gigachat_success_count
+  FROM tool_call_log
+  GROUP BY session_id
+)
+SELECT s.id::text AS session_id,
+       s.created_at,
+       COALESCE(msg.user_turns, 0) AS user_turns,
+       COALESCE(msg.assistant_turns, 0) AS assistant_turns,
+       COALESCE(fb.up_count, 0) AS up_count,
+       COALESCE(fb.down_count, 0) AS down_count,
+       COALESCE(ti.fallback_count, 0) AS fallback_count,
+       COALESCE(tools.tool_error_count, 0) AS tool_error_count,
+       COALESCE(tools.gigachat_success_count, 0) AS gigachat_success_count
+FROM chat_session s
+LEFT JOIN msg ON msg.session_id = s.id
+LEFT JOIN fb ON fb.session_id = s.id
+LEFT JOIN ti ON ti.session_id = s.id
+LEFT JOIN tools ON tools.session_id = s.id
+WHERE COALESCE(fb.up_count, 0) > 0
+  AND COALESCE(fb.down_count, 0) = 0
+  AND COALESCE(ti.fallback_count, 0) = 0
+  AND COALESCE(tools.tool_error_count, 0) = 0
+  AND COALESCE(tools.gigachat_success_count, 0) > 0
+ORDER BY s.created_at, s.id;
+"""
+
+MESSAGES_SQL = """
+SELECT id, role, message_text, structured_payload, created_at
+FROM chat_message
+WHERE session_id = %s
+ORDER BY id;
+"""
+
+TOOLS_SQL = """
+SELECT tool_name, count(*) AS count
+FROM tool_call_log
+WHERE session_id = %s
+  AND tool_name LIKE 'gigachat_%%'
+  AND status = 'success'
+GROUP BY tool_name
+ORDER BY tool_name;
+"""
+
+def jsonable(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return value
+
+def expect_from_payload(payload: dict[str, Any], assistant_text: str) -> dict[str, Any]:
+    expect: dict[str, Any] = {
+        "requires_gigachat": True,
+        "forbid_reasoning_trace": ["fallback_without_llm"],
+        "expected_tool_success": ["gigachat_interpret_turn"],
+    }
+
+    for key in ("intent_type", "dialog_act"):
+        if payload.get(key):
+            expect[key] = payload[key]
+
+    phase = payload.get("conversation_phase")
+    if phase:
+        expect["conversation_phase"] = phase
+
+    pending = payload.get("pending_question") or {}
+    if isinstance(pending, dict) and pending.get("topic"):
+        expect["pending_topic"] = pending["topic"]
+        if pending.get("kind"):
+            expect["pending_kind"] = pending["kind"]
+        total_options = pending.get("total_options")
+        if isinstance(total_options, int) and total_options > 0:
+            expect["pending_options_min"] = 1
+
+    answer = payload.get("answer") or {}
+    if isinstance(answer, dict):
+        if answer.get("answer_type"):
+            expect["answer_type"] = answer["answer_type"]
+        for field, check_name in (
+            ("citations", "citations_min"),
+            ("systems", "systems_min"),
+            ("default_accesses", "default_accesses_min"),
+            ("request_accesses", "request_accesses_min"),
+        ):
+            value = answer.get(field) or []
+            if isinstance(value, list) and value:
+                expect[check_name] = 1
+        if answer.get("justification"):
+            expect["justification_present"] = True
+        if answer.get("instruction"):
+            expect["instruction_present"] = True
+
+    instruction_mode = payload.get("instruction_mode")
+    if instruction_mode:
+        expect["instruction_mode_any_of"] = [instruction_mode]
+
+    current_runner_keys = {
+        "conversation_phase",
+        "pending_topic",
+        "answer_type",
+        "instruction_mode_any_of",
+        "citations_min",
+        "contains_any",
+        "contains_all",
+        "forbid_contains",
+        "state_expect",
+        "state_forbid",
+    }
+    if not (set(expect) & current_runner_keys):
+        text = " ".join(str(assistant_text or "").split())
+        if text:
+            expect["contains_any"] = [text[:80]]
+
+    return expect
+
+def build_turns(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    turns: list[dict[str, Any]] = []
+    pending_user: dict[str, Any] | None = None
+    for message in messages:
+        role = str(message.get("role") or "").upper()
+        if role == "USER":
+            pending_user = message
+            continue
+        if role != "ASSISTANT" or pending_user is None:
+            continue
+
+        payload = message.get("structured_payload") or {}
+        if not isinstance(payload, dict):
+            payload = {}
+        assistant_text = str(message.get("message_text") or "")
+        turns.append(
+            {
+                "user": str(pending_user.get("message_text") or ""),
+                "expect": expect_from_payload(payload, assistant_text),
+                "source": {
+                    "user_message_id": pending_user.get("id"),
+                    "user_created_at": jsonable(pending_user.get("created_at")),
+                    "assistant_message_id": message.get("id"),
+                    "assistant_created_at": jsonable(message.get("created_at")),
+                    "assistant_text": assistant_text,
+                },
+            }
+        )
+        pending_user = None
+    return turns
+
+with db_cursor(cfg) as (_, cur):
+    cur.execute(CLEAN_SESSIONS_SQL)
+    session_rows = [dict(row) for row in cur.fetchall()]
+
+sessions = []
+turns_total = 0
+turn_count_distribution: Counter[int] = Counter()
+
+for index, row in enumerate(session_rows, start=1):
+    session_id = row["session_id"]
+    with db_cursor(cfg) as (_, cur):
+        cur.execute(MESSAGES_SQL, (session_id,))
+        messages = [dict(message_row) for message_row in cur.fetchall()]
+
+    turns = build_turns(messages)
+    if not turns:
+        continue
+
+    with db_cursor(cfg) as (_, cur):
+        cur.execute(TOOLS_SQL, (session_id,))
+        gigachat_tools = {str(r["tool_name"]): int(r["count"]) for r in cur.fetchall()}
+
+    created = row["created_at"]
+    created_slug = created.strftime("%Y%m%d_%H%M%S") if isinstance(created, datetime) else str(index).zfill(3)
+    sessions.append(
+        {
+            "name": f"corporate_up_{index:03d}_{created_slug}_{session_id[:8]}",
+            "source_session_id": session_id,
+            "source_created_at": jsonable(created),
+            "source_filters": {
+                "feedback_up_count": int(row["up_count"]),
+                "feedback_down_count": int(row["down_count"]),
+                "fallback_without_llm_count": int(row["fallback_count"]),
+                "tool_error_count": int(row["tool_error_count"]),
+                "gigachat_success_count": int(row["gigachat_success_count"]),
+                "gigachat_success_tools": gigachat_tools,
+            },
+            "turns": turns,
+        }
+    )
+    turns_total += len(turns)
+    turn_count_distribution[len(turns)] += 1
+
+fixture = {
+    "suite_name": "rolemodel_corporate_success_dialogues",
+    "description": (
+        "Corporate-server successful dialogue export: feedback UP, no DOWN, "
+        "no fallback_without_llm, no tool errors, and at least one successful GigaChat tool call per source session."
+    ),
+    "source": {
+        "server": os.environ.get("HOSTNAME") or "corporate-app-server",
+        "app_path": str(Path.cwd()),
+        "db_host": cfg.db.host,
+        "db_port": cfg.db.port,
+        "db_name": cfg.db.dbname,
+        "db_schema": cfg.db.schema,
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "selection": {
+            "feedback": "UP present and DOWN absent",
+            "fallback_without_llm_count": 0,
+            "tool_error_count": 0,
+            "required_gigachat_success_count_min": 1,
+        },
+        "source_session_count": len(session_rows),
+        "exported_session_count": len(sessions),
+        "exported_turn_count": turns_total,
+        "turn_count_distribution": dict(sorted(turn_count_distribution.items())),
+    },
+    "scoring": {
+        "target_success_rate_percent": 95,
+        "consecutive_sessions_required": 5,
+        "critical_failures": [
+            "gigachat_unavailable",
+            "fallback_without_llm",
+            "missing_required_slot_sequence",
+            "wrong_context_state",
+            "uncited_instruction_answer",
+        ],
+    },
+    "sessions": sessions,
+}
+
+out_path.write_text(json.dumps(fixture, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+print(json.dumps({"path": str(out_path), "sessions": len(sessions), "turns": turns_total}, ensure_ascii=False))
+PY
+REMOTE_SCRIPT
+
+mkdir -p "$(dirname "$OUTPUT_PATH")"
+log "Copying export to $OUTPUT_PATH"
+scp "$APP_SSH_TARGET:$REMOTE_OUTPUT" "$OUTPUT_PATH"
+
+log "Validating JSON"
+/usr/bin/python3 -m json.tool "$OUTPUT_PATH" >/dev/null
+/usr/bin/python3 - "$OUTPUT_PATH" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+payload = json.loads(path.read_text(encoding="utf-8"))
+turns = sum(len(session.get("turns", [])) for session in payload.get("sessions", []))
+print(
+    json.dumps(
+        {
+            "output": str(path),
+            "suite_name": payload.get("suite_name"),
+            "sessions": len(payload.get("sessions", [])),
+            "turns": turns,
+            "source": payload.get("source", {}),
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+)
+PY
+
+log "Done"

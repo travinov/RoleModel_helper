@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from app.agent.scenario_services import InstructionService
 from app.config import AppConfig
-from app.services.instruction_answer import StaticInstructionAnswerService
+from app.services.instruction_answer import InstructionAnswerUnavailableError, StaticInstructionAnswerService
 from rolemodel_etl.config import DBConfig
 
 
@@ -113,7 +113,11 @@ class StaticInstructionServiceTestCase(unittest.TestCase):
             static_path = Path(tmpdir) / "static_instruction.txt"
             static_path.write_text("Шаг 1. Откройте Мои доступы.\nШаг 2. Выберите ролевую модель.", encoding="utf-8")
             with patch.dict(os.environ, {"RM_STATIC_INSTRUCTION_PATH": str(static_path)}, clear=False):
-                service = StaticInstructionAnswerService(_test_config())
+                config = _test_config()
+                config.gigachat_use_for_instruction_answer = True
+                config.gigachat_access_token = "test-token"
+                service = StaticInstructionAnswerService(config)
+                service.gigachat.chat_completion = lambda *args, **kwargs: "Откройте Мои доступы [1]."
                 pack = service.load_instruction_pack()
                 answer = service.answer_from_static_instruction("как получить доступ")
 
@@ -127,6 +131,15 @@ class StaticInstructionServiceTestCase(unittest.TestCase):
         self.assertEqual(answer["instruction_mode"], "INLINE_DOC")
         self.assertIn("Мои доступы", answer["summary_text"])
         self.assertEqual(answer["citations"][0].source_title, "Статичная инструкция")
+
+    def test_instruction_answer_does_not_fallback_when_gigachat_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            static_path = Path(tmpdir) / "static_instruction.txt"
+            static_path.write_text("Шаг 1. Откройте Мои доступы.", encoding="utf-8")
+            with patch.dict(os.environ, {"RM_STATIC_INSTRUCTION_PATH": str(static_path)}, clear=False):
+                service = StaticInstructionAnswerService(_test_config())
+                with self.assertRaises(InstructionAnswerUnavailableError):
+                    service.answer_from_static_instruction("как получить доступ")
 
     def test_instruction_service_returns_clear_message_when_static_instruction_missing(self) -> None:
         class MissingStaticInstruction:

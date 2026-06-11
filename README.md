@@ -189,3 +189,28 @@ Run all tests:
 ```bash
 /usr/bin/python3 -m unittest discover -s tests -p "test_*.py"
 ```
+
+Run the combined successful-dialogue quality benchmark on a deployed server:
+
+```bash
+set -a
+source .env.server
+set +a
+
+.venv/bin/python tests/run_dialogue_benchmark.py \
+  --base-url http://127.0.0.1:8000 \
+  --combined-success-fixture \
+  --db-evidence \
+  --report reports/dialogue_quality/combined_success_report.json \
+  --strict-exit
+```
+
+Session selection:
+- first 10 chats: add `--session-limit 10`
+- first 20 chats: add `--session-limit 20`
+- all chats: omit `--session-limit` and `--random-session-limit`
+- random 10 chats: add `--random-session-limit 10 --random-seed 42`
+
+Output:
+- stdout prints suite name, success rate, consecutive-session result, quality-gate result, critical failure summary, and report path.
+- the JSON report contains selected/fixture session counts, selection mode, per-session and per-turn results, failures, and DB evidence from `tool_call_log` / `chat_turn_interpretation` when `--db-evidence` is enabled.

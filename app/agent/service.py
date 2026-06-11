@@ -24,7 +24,7 @@ from app.models.api import (
 from app.models.domain import SearchAnswer, ToolAttempt, TurnInterpretation
 from app.repositories.search_repository import SearchRepository
 from app.services.gigachat import GigaChatClient
-from app.services.instruction_answer import StaticInstructionAnswerService
+from app.services.instruction_answer import InstructionAnswerUnavailableError, StaticInstructionAnswerService
 from app.services.text import normalize_text, similarity
 
 from ..config import AppConfig
@@ -79,6 +79,10 @@ PHASE_BY_SLOT = {
 ROLE_DISCOVERY_FOLLOWUP = "Если хотите, подскажу, как проверить или запросить доступ к этой или другим АС."
 SYSTEM_DISCOVERY_FOLLOWUP = "Если нужна конкретная АС, напишите ее название или выберите ее, и я сразу покажу роли."
 INSTRUCTION_OFFER_PROMPT = "Нужна инструкция, как проверить или запросить доступ?"
+
+
+class LLMUnavailableError(RuntimeError):
+    """Raised when GigaChat cannot provide required turn interpretation."""
 
 
 class ChatAgent:
@@ -149,12 +153,15 @@ class ChatAgent:
             raise ValueError(f"Session {session_id} was not found")
         message_id = self.search_repository.add_message(session_id, "USER", text)
         state = self.search_repository.get_slot_state(session_id)
-        interpretation = self._interpret_turn(session_id, message_id, text, state)
-        interpretation = self._maybe_promote_instruction_query(session_id, text, state, interpretation)
-        interpretation = self._maybe_promote_instruction_followup(session_id, text, state, interpretation)
-        interpretation = self._maybe_promote_system_discovery_query(session_id, text, state, interpretation)
-        self.search_repository.add_turn_interpretation(session_id, message_id, interpretation)
-        return self._apply_policy(session_id, text, interpretation)
+        try:
+            interpretation = self._interpret_turn(session_id, message_id, text, state)
+            interpretation = self._maybe_promote_instruction_query(session_id, text, state, interpretation)
+            interpretation = self._maybe_promote_instruction_followup(session_id, text, state, interpretation)
+            interpretation = self._maybe_promote_system_discovery_query(session_id, text, state, interpretation)
+            self.search_repository.add_turn_interpretation(session_id, message_id, interpretation)
+            return self._apply_policy(session_id, text, interpretation)
+        except (InstructionAnswerUnavailableError, LLMUnavailableError):
+            return self._store_llm_unavailable_response(session_id, text)
 
     def _apply_policy(
         self,
@@ -489,7 +496,7 @@ class ChatAgent:
                 ),
                 {"error": str(exc)},
             )
-            return "OTHER"
+            raise LLMUnavailableError("GigaChat instruction offer classification failed") from exc
         decision = str((payload or {}).get("decision") or "OTHER").strip().upper()
         confidence = self._normalize_confidence((payload or {}).get("confidence"))
         if decision not in {"ACCEPT", "DECLINE", "OTHER"}:
@@ -623,7 +630,7 @@ class ChatAgent:
                 ),
                 {"error": str(exc)},
             )
-            return interpretation
+            raise LLMUnavailableError("GigaChat instruction follow-up classification failed") from exc
         is_instruction = bool(payload.get("is_instruction_request")) if isinstance(payload, dict) else False
         confidence = self._normalize_confidence((payload or {}).get("confidence")) if isinstance(payload, dict) else 0.0
         self.search_repository.log_tool_call(
@@ -701,7 +708,7 @@ class ChatAgent:
                 ),
                 {"error": str(exc)},
             )
-            return interpretation
+            raise LLMUnavailableError("GigaChat instruction query classification failed") from exc
         is_instruction = bool((payload or {}).get("is_instruction_request"))
         confidence = self._normalize_confidence((payload or {}).get("confidence"))
         self.search_repository.log_tool_call(
@@ -822,7 +829,7 @@ class ChatAgent:
                 ),
                 {"error": str(exc)},
             )
-            return interpretation
+            raise LLMUnavailableError("GigaChat system discovery classification failed") from exc
         if not isinstance(payload, dict):
             self.search_repository.log_tool_call(
                 session_id,
@@ -835,7 +842,7 @@ class ChatAgent:
                 ),
                 {"payload": payload},
             )
-            return interpretation
+            raise LLMUnavailableError("GigaChat system discovery classification returned invalid payload")
         target = str(payload.get("target") or "").strip().upper()
         confidence = self._normalize_confidence(payload.get("confidence"))
         self.search_repository.log_tool_call(
@@ -890,7 +897,7 @@ class ChatAgent:
     ) -> TurnInterpretation:
         interpretation = self._interpret_turn_with_llm(session_id, text, state)
         if interpretation is None:
-            interpretation = self._interpret_turn_fallback(text, state)
+            raise LLMUnavailableError("GigaChat turn interpretation is unavailable")
         return self._apply_interpretation_guardrails(interpretation, text, state)
 
     def _interpret_turn_with_llm(
@@ -2995,6 +3002,70 @@ class ChatAgent:
             state_revision=int(state.get("state_revision") or 0),
             suggested_actions=suggested_actions,
             answer=answer,
+        )
+
+    def _store_llm_unavailable_response(self, session_id: str, retry_text: str) -> ChatMessageResponse:
+        assistant_text = (
+            "GigaChat временно недоступен, поэтому я не могу надежно обработать запрос. "
+            "Повторите запрос позже или нажмите «Повторить запрос»."
+        )
+        state = self.search_repository.get_slot_state(session_id)
+        context = self._build_context(state)
+        pending_question = self._hydrate_pending_question(state)
+        confirmation = self._pending_question_to_confirmation(pending_question)
+        suggested_actions = [
+            SuggestedActionPayload(
+                id="retry_request",
+                label="Повторить запрос",
+                text=retry_text,
+            ),
+            *self._build_suggested_actions(state, pending_question),
+        ]
+        resolved = self._resolved_payload(state)
+        structured_payload = {
+            "intent_type": "UNKNOWN",
+            "dialog_act": "LLM_UNAVAILABLE",
+            "resolved": resolved,
+            "context": context,
+            "active_goal": state.get("active_goal") or state.get("last_intent_type"),
+            "context_shift": state.get("context_shift"),
+            "conversation_phase": state.get("conversation_phase"),
+            "resume_goal": state.get("resume_goal"),
+            "resume_phase": state.get("resume_phase"),
+            "instruction_mode": state.get("instruction_mode"),
+            "pending_question": pending_question.model_dump() if pending_question else None,
+            "state_revision": int(state.get("state_revision") or 0),
+            "suggested_actions": [item.model_dump() for item in suggested_actions],
+            "requires_confirmation": confirmation is not None,
+            "confirmation": confirmation.model_dump() if confirmation else None,
+            "answer": None,
+        }
+        message_id = self.search_repository.add_message(
+            session_id=session_id,
+            role="ASSISTANT",
+            message_text=assistant_text,
+            structured_payload=structured_payload,
+        )
+        return ChatMessageResponse(
+            message_id=message_id,
+            session_id=session_id,
+            assistant_text=assistant_text,
+            intent_type="UNKNOWN",
+            dialog_act="LLM_UNAVAILABLE",
+            requires_confirmation=confirmation is not None,
+            confirmation=confirmation,
+            resolved=resolved,
+            context=context,
+            active_goal=state.get("active_goal") or state.get("last_intent_type"),
+            context_shift=state.get("context_shift"),
+            conversation_phase=state.get("conversation_phase"),
+            resume_goal=state.get("resume_goal"),
+            resume_phase=state.get("resume_phase"),
+            instruction_mode=state.get("instruction_mode"),
+            pending_question=pending_question,
+            state_revision=int(state.get("state_revision") or 0),
+            suggested_actions=suggested_actions,
+            answer=None,
         )
 
     def _build_context(self, state: dict[str, Any]) -> dict[str, Any]:

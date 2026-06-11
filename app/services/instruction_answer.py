@@ -12,6 +12,10 @@ from app.services.text import normalize_text, similarity
 from ..config import AppConfig
 
 
+class InstructionAnswerUnavailableError(RuntimeError):
+    """Raised when instruction answer synthesis requires GigaChat but it is unavailable."""
+
+
 class StaticInstructionAnswerService:
     def __init__(self, config: AppConfig) -> None:
         self.config = config
@@ -78,8 +82,6 @@ class StaticInstructionAnswerService:
             return None
 
         summary_text = self._answer_with_gigachat(query_text, selected)
-        if not summary_text:
-            summary_text = "\n".join(chunk.chunk_text for chunk in selected)
         return {
             "instruction": summary_text,
             "citations": selected,
@@ -142,7 +144,7 @@ class StaticInstructionAnswerService:
 
     def _answer_with_gigachat(self, query_text: str, selected: list[RetrievedChunk]) -> Optional[str]:
         if not (self.gigachat.enabled and self.config.gigachat_use_for_instruction_answer):
-            return None
+            raise InstructionAnswerUnavailableError("GigaChat instruction answer synthesis is unavailable")
         citations_block = "\n".join(
             f"[{index}] {chunk.citation_label}: {chunk.chunk_text}"
             for index, chunk in enumerate(selected, start=1)
@@ -168,7 +170,9 @@ class StaticInstructionAnswerService:
                 temperature=0.1,
                 max_tokens=700,
             )
-        except Exception:
-            return None
+        except Exception as exc:
+            raise InstructionAnswerUnavailableError("GigaChat instruction answer synthesis failed") from exc
         cleaned = re.sub(r"\s+\n", "\n", str(text or "")).strip()
-        return cleaned or None
+        if not cleaned:
+            raise InstructionAnswerUnavailableError("GigaChat instruction answer synthesis returned empty text")
+        return cleaned
