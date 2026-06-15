@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
@@ -31,6 +32,14 @@ def _runner(sessions: list[dict] | None = None, **kwargs) -> DialogueBenchmarkRu
 
 
 class DialogueBenchmarkRunnerExpectationTestCase(unittest.TestCase):
+    def test_run_prints_progress_to_progress_stream(self) -> None:
+        progress_stream = io.StringIO()
+        runner = _runner(progress_stream=progress_stream)
+
+        runner.run()
+
+        self.assertIn("[dialogue-benchmark] Selected 0/0 sessions", progress_stream.getvalue())
+
     def test_script_path_supports_db_evidence_import_from_repo_root(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             fixture_path = Path(temp_dir) / "fixture.json"

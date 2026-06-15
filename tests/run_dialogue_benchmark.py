@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 from urllib import error, request
 
 
@@ -131,6 +131,7 @@ class DialogueBenchmarkRunner:
         session_limit: int | None = None,
         random_session_limit: int | None = None,
         random_seed: int = 1,
+        progress_stream: TextIO | None = sys.stderr,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.fixture_path = fixture_path
@@ -143,6 +144,12 @@ class DialogueBenchmarkRunner:
         self.random_session_limit = random_session_limit
         self.random_seed = random_seed
         self.session_selection: dict[str, Any] = {"mode": "all"}
+        self.progress_stream = progress_stream
+
+    def _progress(self, message: str) -> None:
+        if self.progress_stream is None:
+            return
+        print(f"[dialogue-benchmark] {message}", file=self.progress_stream, flush=True)
 
     def _select_sessions(self) -> list[dict[str, Any]]:
         sessions = list(self.fixture["sessions"])
@@ -417,10 +424,18 @@ class DialogueBenchmarkRunner:
         total_passed = 0
         critical_summary: dict[str, int] = {}
         selected_sessions = self._select_sessions()
+        self._progress(
+            f"Selected {len(selected_sessions)}/{len(self.fixture['sessions'])} sessions: "
+            f"{json.dumps(self.session_selection, ensure_ascii=False)}"
+        )
 
-        for session_case in selected_sessions:
+        for session_index, session_case in enumerate(selected_sessions, start=1):
+            turn_count = len(session_case["turns"])
+            self._progress(f"Session {session_index}/{len(selected_sessions)} start: {session_case['name']} ({turn_count} turns)")
+            self._progress(f"Session {session_index}/{len(selected_sessions)} creating API session")
             session_resp = self._request_json("POST", "/api/v1/chat/sessions")
             session_id = session_resp["session_id"]
+            self._progress(f"Session {session_index}/{len(selected_sessions)} API session_id={session_id}")
             turns_report: list[dict[str, Any]] = []
             session_checks = 0
             session_passed = 0
@@ -431,6 +446,7 @@ class DialogueBenchmarkRunner:
             for idx, turn in enumerate(session_case["turns"], start=1):
                 user_text = turn["user"]
                 expect = turn["expect"]
+                self._progress(f"Session {session_index}/{len(selected_sessions)} turn {idx}/{turn_count} sending request")
                 try:
                     response = self._request_json(
                         "POST",
@@ -455,6 +471,7 @@ class DialogueBenchmarkRunner:
 
                 evidence = None
                 if self.evidence_collector is not None:
+                    self._progress(f"Session {session_index}/{len(selected_sessions)} turn {idx}/{turn_count} collecting DB evidence")
                     evidence, last_tool_id, last_interpretation_id = self.evidence_collector.collect_delta(
                         session_id,
                         last_tool_id,
@@ -467,6 +484,11 @@ class DialogueBenchmarkRunner:
                 session_critical.extend(eval_result.critical_hits)
                 for hit in eval_result.critical_hits:
                     critical_summary[hit] = critical_summary.get(hit, 0) + 1
+                self._progress(
+                    f"Session {session_index}/{len(selected_sessions)} turn {idx}/{turn_count} "
+                    f"checks {eval_result.checks_passed}/{eval_result.checks_total}, "
+                    f"failures={len(eval_result.failures)}, critical={eval_result.critical_hits or []}"
+                )
 
                 turns_report.append(
                     {
@@ -493,6 +515,11 @@ class DialogueBenchmarkRunner:
             total_checks += session_checks
             total_passed += session_passed
             session_rate = (session_passed / session_checks * 100.0) if session_checks else 100.0
+            session_meets_target = session_rate >= self.target_rate and not session_critical
+            self._progress(
+                f"Session {session_index}/{len(selected_sessions)} done: "
+                f"{round(session_rate, 2)}%, meets_target={session_meets_target}, critical={sorted(set(session_critical))}"
+            )
             suite_results.append(
                 {
                     "name": session_case["name"],
@@ -501,7 +528,7 @@ class DialogueBenchmarkRunner:
                     "checks_passed": session_passed,
                     "actual_success_rate_percent": round(session_rate, 2),
                     "target_success_rate_percent": self.target_rate,
-                    "meets_target": session_rate >= self.target_rate and not session_critical,
+                    "meets_target": session_meets_target,
                     "critical_hits": sorted(set(session_critical)),
                     "turns": turns_report,
                 }
