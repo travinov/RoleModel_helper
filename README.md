@@ -216,9 +216,13 @@ On the deployed server, use the bundled wrapper:
 ```bash
 bash scripts/run_dialogue_quality_benchmark.sh 10
 bash scripts/run_dialogue_quality_benchmark.sh 20
+bash scripts/run_dialogue_quality_benchmark.sh 100
 bash scripts/run_dialogue_quality_benchmark.sh all
 bash scripts/run_dialogue_quality_benchmark.sh random10
 ```
+
+Full deployment, benchmark, and report download steps are documented in
+`docs/dialogue_quality_benchmark_runbook.md`.
 
 Output:
 - stdout prints suite name, success rate, consecutive-session result, quality-gate result, critical failure summary, and report path.
