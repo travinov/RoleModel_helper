@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,6 +31,42 @@ def _runner(sessions: list[dict] | None = None, **kwargs) -> DialogueBenchmarkRu
 
 
 class DialogueBenchmarkRunnerExpectationTestCase(unittest.TestCase):
+    def test_script_path_supports_db_evidence_import_from_repo_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_path = Path(temp_dir) / "fixture.json"
+            report_path = Path(temp_dir) / "report.json"
+            fixture_path.write_text(
+                json.dumps(
+                    {
+                        "suite_name": "test_suite",
+                        "scoring": {"target_success_rate_percent": 95},
+                        "sessions": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            env = os.environ.copy()
+            env.pop("PYTHONPATH", None)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "tests/run_dialogue_benchmark.py",
+                    "--fixture",
+                    str(fixture_path),
+                    "--report",
+                    str(report_path),
+                    "--db-evidence",
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_selects_first_sessions_by_limit(self) -> None:
         sessions = [{"name": f"session_{idx}", "turns": []} for idx in range(1, 6)]
         runner = _runner(sessions, session_limit=2)
