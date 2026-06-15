@@ -41,6 +41,7 @@ Options:
 The update preserves these remote paths:
   .env.server
   logs/
+  reports/
   uploads/
   backups/
   certs/                   including certs/gigachat/*.crt and *.key
@@ -118,7 +119,7 @@ else
 fi
 
 REMOTE_DIR_Q="$(shell_quote "$APP_REMOTE_DIR")"
-REMOTE_PREPARE_COMMAND="mkdir -p -- $REMOTE_DIR_Q && find $REMOTE_DIR_Q -mindepth 1 -maxdepth 1 ! -name '.env.server' ! -name 'uploads' ! -name 'backups' ! -name 'logs' ! -name 'certs' -exec rm -rf -- {} + && tar -xzf - -C $REMOTE_DIR_Q"
+REMOTE_PREPARE_COMMAND="mkdir -p -- $REMOTE_DIR_Q && find $REMOTE_DIR_Q -mindepth 1 -maxdepth 1 ! -name '.env.server' ! -name 'uploads' ! -name 'backups' ! -name 'logs' ! -name 'reports' ! -name 'certs' -exec rm -rf -- {} + && tar -xzf - -C $REMOTE_DIR_Q"
 
 log "Uploading application update to $APP_SSH_TARGET:$APP_REMOTE_DIR"
 (
@@ -127,6 +128,7 @@ log "Uploading application update to $APP_SSH_TARGET:$APP_REMOTE_DIR"
     --exclude='./.git' \
     --exclude='./.venv' \
     --exclude='./logs' \
+    --exclude='./reports' \
     --exclude='./uploads' \
     --exclude='./backups' \
     --exclude='./__pycache__' \
@@ -162,6 +164,7 @@ fi
 
 mkdir -p logs
 chmod 700 logs
+mkdir -p reports/dialogue_quality
 
 INSTALL_DIR="$(pwd)"
 ENV_FILE="$INSTALL_DIR/.env.server"

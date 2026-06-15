@@ -9,6 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "install_rolemodel_helper_server.sh"
 REMOTE_DEPLOY_SCRIPT_PATH = REPO_ROOT / "scripts" / "deploy_rolemodel_helper_remote.sh"
 REMOTE_APP_UPDATE_SCRIPT_PATH = REPO_ROOT / "scripts" / "update_rolemodel_helper_app_remote.sh"
+QUALITY_BENCHMARK_SCRIPT_PATH = REPO_ROOT / "scripts" / "run_dialogue_quality_benchmark.sh"
 REQUIREMENTS_PATH = REPO_ROOT / "requirements.txt"
 
 
@@ -94,6 +95,8 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("scripts/update_rolemodel_helper_app_remote.sh", script)
         self.assertIn("systemctl --user restart rolemodel-helper.service", script)
         self.assertIn("certs/gigachat", script)
+        self.assertIn("reports/", script)
+        self.assertIn("mkdir -p reports/dialogue_quality", script)
         self.assertIn(".env.server", script)
         self.assertIn("pip install", script)
         self.assertIn("--no-index", script)
@@ -106,6 +109,30 @@ class InstallScriptTest(unittest.TestCase):
     def test_remote_app_update_script_is_bash_syntax_valid(self) -> None:
         result = subprocess.run(
             ["bash", "-n", str(REMOTE_APP_UPDATE_SCRIPT_PATH)],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_dialogue_quality_benchmark_script_exists_and_supports_modes(self) -> None:
+        self.assertTrue(QUALITY_BENCHMARK_SCRIPT_PATH.exists(), "missing server-side dialogue quality benchmark script")
+        script = QUALITY_BENCHMARK_SCRIPT_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("tests/run_dialogue_benchmark.py", script)
+        self.assertIn("--combined-success-fixture", script)
+        self.assertIn("--db-evidence", script)
+        self.assertIn("--session-limit", script)
+        self.assertIn("--random-session-limit", script)
+        self.assertIn("all", script)
+        self.assertIn("reports/dialogue_quality", script)
+        self.assertIn("source .env.server", script)
+
+    def test_dialogue_quality_benchmark_script_is_bash_syntax_valid(self) -> None:
+        result = subprocess.run(
+            ["bash", "-n", str(QUALITY_BENCHMARK_SCRIPT_PATH)],
             cwd=str(REPO_ROOT),
             text=True,
             capture_output=True,

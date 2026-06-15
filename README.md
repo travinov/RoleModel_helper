@@ -211,6 +211,15 @@ Session selection:
 - all chats: omit `--session-limit` and `--random-session-limit`
 - random 10 chats: add `--random-session-limit 10 --random-seed 42`
 
+On the deployed server, use the bundled wrapper:
+
+```bash
+bash scripts/run_dialogue_quality_benchmark.sh 10
+bash scripts/run_dialogue_quality_benchmark.sh 20
+bash scripts/run_dialogue_quality_benchmark.sh all
+bash scripts/run_dialogue_quality_benchmark.sh random10
+```
+
 Output:
 - stdout prints suite name, success rate, consecutive-session result, quality-gate result, critical failure summary, and report path.
 - the JSON report contains selected/fixture session counts, selection mode, per-session and per-turn results, failures, and DB evidence from `tool_call_log` / `chat_turn_interpretation` when `--db-evidence` is enabled.
