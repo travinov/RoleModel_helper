@@ -153,6 +153,10 @@ RM_ROLEMODEL_UPLOAD_DIR="${RM_ROLEMODEL_UPLOAD_DIR:-$INSTALL_DIR/uploads/rolemod
 RM_INSTRUCTION_UPLOAD_DIR="${RM_INSTRUCTION_UPLOAD_DIR:-$INSTALL_DIR/uploads/instruction}"
 RM_DB_BACKUP_DIR="${RM_DB_BACKUP_DIR:-$INSTALL_DIR/backups}"
 RM_WHEELHOUSE_DIR="${RM_WHEELHOUSE_DIR:-$INSTALL_DIR/.rolemodel_wheelhouse}"
+RM_BUNDLED_PG_DUMP_PATH="$INSTALL_DIR/vendor/pgsql-client-el9-x86_64/bin/pg_dump"
+if [[ -z "${RM_PG_DUMP_PATH:-}" && -x "$RM_BUNDLED_PG_DUMP_PATH" ]]; then
+  RM_PG_DUMP_PATH="$RM_BUNDLED_PG_DUMP_PATH"
+fi
 
 if [[ -z "${RM_DB_PASSWORD:-}" ]]; then
   if [[ "$NONINTERACTIVE" == "1" ]]; then
@@ -215,6 +219,9 @@ log "Writing protected environment file: $ENV_FILE"
   printf 'RM_ROLEMODEL_UPLOAD_DIR=%s\n' "$(shell_quote "$RM_ROLEMODEL_UPLOAD_DIR")"
   printf 'RM_INSTRUCTION_UPLOAD_DIR=%s\n' "$(shell_quote "$RM_INSTRUCTION_UPLOAD_DIR")"
   printf 'RM_DB_BACKUP_DIR=%s\n' "$(shell_quote "$RM_DB_BACKUP_DIR")"
+  if [[ -n "${RM_PG_DUMP_PATH:-}" ]]; then
+    printf 'RM_PG_DUMP_PATH=%s\n' "$(shell_quote "$RM_PG_DUMP_PATH")"
+  fi
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 

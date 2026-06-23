@@ -31,6 +31,10 @@ from rolemodel_etl.parser import parse_workbook
 from ..config import AppConfig
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BUNDLED_PG_DUMP_RELATIVE = Path("vendor") / "pgsql-client-el9-x86_64" / "bin" / "pg_dump"
+
+
 def _report_from_parse(parsed) -> dict:
     return {
         "source_file": parsed.source_file,
@@ -70,10 +74,41 @@ def _safe_upload_name(raw_name: str) -> str:
     return f"{stem or 'rolemodel_upload'}{suffix}"
 
 
+def _is_executable_file(path: Path) -> bool:
+    return path.is_file() and os.access(path, os.X_OK)
+
+
+def _resolve_pg_dump_path() -> str | None:
+    explicit_path = os.getenv("RM_PG_DUMP_PATH")
+    if explicit_path and _is_executable_file(Path(explicit_path).expanduser()):
+        return str(Path(explicit_path).expanduser())
+
+    bundled_path = PROJECT_ROOT / BUNDLED_PG_DUMP_RELATIVE
+    if _is_executable_file(bundled_path):
+        return str(bundled_path)
+
+    return shutil.which("pg_dump")
+
+
+def _prepend_ld_library_path(env: dict[str, str], pg_dump_path: str) -> None:
+    lib_dir = Path(pg_dump_path).resolve().parents[1] / "lib"
+    if not lib_dir.is_dir():
+        return
+    current = env.get("LD_LIBRARY_PATH")
+    env["LD_LIBRARY_PATH"] = f"{lib_dir}:{current}" if current else str(lib_dir)
+
+
 def _backup_database(config: AppConfig) -> str:
-    pg_dump = shutil.which("pg_dump")
+    pg_dump = _resolve_pg_dump_path()
     if not pg_dump:
-        raise HTTPException(status_code=500, detail="На сервере не найден pg_dump для резервного копирования БД")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "На сервере не найден pg_dump для резервного копирования БД. "
+                "Укажите RM_PG_DUMP_PATH или положите клиент PostgreSQL в "
+                f"{BUNDLED_PG_DUMP_RELATIVE.as_posix()}."
+            ),
+        )
     backup_dir = Path(os.getenv("RM_DB_BACKUP_DIR", str(Path.home() / "rolemodel_backups")))
     backup_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -89,10 +124,13 @@ def _backup_database(config: AppConfig) -> str:
         "-U",
         config.db.user,
         "-Fc",
+        "-n",
+        config.db.schema,
         "-f",
         str(backup_path),
         config.db.dbname,
     ]
+    _prepend_ld_library_path(env, pg_dump)
     completed = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=120)
     if completed.returncode != 0:
         raise HTTPException(
