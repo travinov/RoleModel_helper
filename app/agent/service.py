@@ -71,6 +71,78 @@ SYSTEM_ENTITY_MIN_SCORE = 0.45
 ORG_SLOT_TOPICS = {"position", "city", "department"}
 SLOT_CONFIRM_GAP = 0.10
 ROLE_DISCOVERY_LIST_LIMIT = 20
+DEPARTMENT_ORDINAL_NUMBERS = {
+    "первый": 1,
+    "первая": 1,
+    "первое": 1,
+    "первые": 1,
+    "второй": 2,
+    "вторая": 2,
+    "второе": 2,
+    "вторые": 2,
+    "третий": 3,
+    "третья": 3,
+    "третье": 3,
+    "третьи": 3,
+    "четвертый": 4,
+    "четвертая": 4,
+    "четвертое": 4,
+    "четвертые": 4,
+    "пятый": 5,
+    "пятая": 5,
+    "пятое": 5,
+    "пятые": 5,
+    "шестой": 6,
+    "шестая": 6,
+    "шестое": 6,
+    "шестые": 6,
+    "седьмой": 7,
+    "седьмая": 7,
+    "седьмое": 7,
+    "седьмые": 7,
+    "восьмой": 8,
+    "восьмая": 8,
+    "восьмое": 8,
+    "восьмые": 8,
+    "девятый": 9,
+    "девятая": 9,
+    "девятое": 9,
+    "девятые": 9,
+    "десятый": 10,
+    "десятая": 10,
+    "десятое": 10,
+    "десятые": 10,
+    "одиннадцатый": 11,
+    "одиннадцатая": 11,
+    "одиннадцатое": 11,
+    "двенадцатый": 12,
+    "двенадцатая": 12,
+    "двенадцатое": 12,
+    "тринадцатый": 13,
+    "тринадцатая": 13,
+    "тринадцатое": 13,
+    "четырнадцатый": 14,
+    "четырнадцатая": 14,
+    "четырнадцатое": 14,
+    "пятнадцатый": 15,
+    "пятнадцатая": 15,
+    "пятнадцатое": 15,
+    "шестнадцатый": 16,
+    "шестнадцатая": 16,
+    "шестнадцатое": 16,
+    "семнадцатый": 17,
+    "семнадцатая": 17,
+    "семнадцатое": 17,
+    "восемнадцатый": 18,
+    "восемнадцатая": 18,
+    "восемнадцатое": 18,
+    "девятнадцатый": 19,
+    "девятнадцатая": 19,
+    "девятнадцатое": 19,
+    "двадцатый": 20,
+    "двадцатая": 20,
+    "двадцатое": 20,
+}
 PHASE_BY_SLOT = {
     "position": "COLLECT_POSITION",
     "city": "COLLECT_CITY",
@@ -157,6 +229,7 @@ class ChatAgent:
             interpretation = self._interpret_turn(session_id, message_id, text, state)
             interpretation = self._maybe_promote_instruction_query(session_id, text, state, interpretation)
             interpretation = self._maybe_promote_instruction_followup(session_id, text, state, interpretation)
+            interpretation = self._maybe_promote_role_list_query(session_id, text, state, interpretation)
             interpretation = self._maybe_promote_system_discovery_query(session_id, text, state, interpretation)
             self.search_repository.add_turn_interpretation(session_id, message_id, interpretation)
             return self._apply_policy(session_id, text, interpretation)
@@ -731,6 +804,54 @@ class ChatAgent:
         interpretation.needs_clarification = False
         return interpretation
 
+    def _maybe_promote_role_list_query(
+        self,
+        session_id: str,
+        raw_text: str,
+        state: dict[str, Any],
+        interpretation: TurnInterpretation,
+    ) -> TurnInterpretation:
+        role_list_query = self._looks_like_role_list_query(raw_text)
+        access_list_query = self._looks_like_access_list_query(raw_text)
+        if not role_list_query and not access_list_query:
+            return interpretation
+        if interpretation.dialog_act in {"RESET_CONTEXT", "SHOW_MORE"}:
+            return interpretation
+        pending_question = self._hydrate_pending_question(state)
+        if pending_question and pending_question.kind == "candidate_selection":
+            return interpretation
+
+        active_goal = self._normalize_intent_type(state.get("active_goal") or state.get("last_intent_type"))
+        incoming_intent = interpretation.intent_type
+        has_system_context = bool(
+            self._clean_slot_text((interpretation.entities or {}).get("system_raw"))
+            or self._clean_slot_text(state.get("system_raw"))
+            or state.get("resolved_system_id")
+        )
+        target_intent = "ROLE_DISCOVERY" if role_list_query or has_system_context else "SYSTEM_DISCOVERY"
+        interpretation.intent_type = target_intent
+        interpretation.goal_transition = "STAY" if active_goal == target_intent else "SWITCH"
+        interpretation.dialog_act = "SWITCH_INTENT" if pending_question and pending_question.kind == "slot_request" else "PROVIDE_SLOT"
+        interpretation.context_shift = "NONE" if active_goal == target_intent else "SWITCH_GOAL"
+        interpretation.needs_clarification = False
+        self.search_repository.log_tool_call(
+            session_id,
+            ToolAttempt(
+                tool_name="role_list_query_guardrail",
+                attempt_no=1,
+                input_payload={
+                    "text": raw_text,
+                    "incoming_intent": incoming_intent,
+                    "active_goal": active_goal,
+                    "target_intent": target_intent,
+                },
+                result_status="success",
+                result_summary=f"force_{target_intent.lower()}",
+            ),
+            {"applied": True},
+        )
+        return interpretation
+
     def _last_assistant_answer_type(self, session_id: str) -> str:
         for row in reversed(self.search_repository.list_messages(session_id)):
             if str(row.get("role", "")).upper() != "ASSISTANT":
@@ -784,6 +905,13 @@ class ChatAgent:
         if not self.config.gigachat_use_for_intent or not self.gigachat.enabled:
             return interpretation
         pending_question = self._hydrate_pending_question(state)
+        if (
+            pending_question
+            and pending_question.kind == "slot_request"
+            and pending_question.topic in ORG_SLOT_TOPICS
+            and interpretation.entities.get(f"{pending_question.topic}_raw")
+        ):
+            return interpretation
         prompt_context = {
             "active_goal": active_goal,
             "conversation_phase": state.get("conversation_phase"),
@@ -887,6 +1015,56 @@ class ChatAgent:
         has_system_marker = bool(re.search(r"\bас\b|автоматизирован", text))
         has_list_marker = bool(re.search(r"каки|спис|переч|доступ|полож", text))
         return has_system_marker and has_list_marker
+
+    @staticmethod
+    def _looks_like_role_list_query(raw_text: str) -> bool:
+        text = normalize_text(raw_text)
+        if not text:
+            return False
+        role_list_markers = (
+            "какие роли",
+            "каких рол",
+            "какая роль",
+            "какую роль",
+            "какой роль",
+            "роли доступны",
+            "роль доступна",
+            "роль нужна",
+            "роль необходим",
+        )
+        return any(marker in text for marker in role_list_markers)
+
+    @staticmethod
+    def _looks_like_access_list_query(raw_text: str) -> bool:
+        text = normalize_text(raw_text)
+        if not text:
+            return False
+        process_markers = (
+            "как получить",
+            "как запросить",
+            "как оформить",
+            "как подать",
+            "получить доступ",
+            "запросить доступ",
+            "оформить доступ",
+            "что нажать",
+            "инструкц",
+        )
+        if any(marker in text for marker in process_markers):
+            return False
+        list_markers = (
+            "какие доступы",
+            "какой доступ",
+            "мои доступы",
+            "доступы в ас",
+            "доступы для ас",
+            "доступы по ас",
+            "доступы к ас",
+            "доступы в системе",
+            "доступы для системы",
+            "доступные доступы",
+        )
+        return any(marker in text for marker in list_markers)
 
     def _interpret_turn(
         self,
@@ -2218,16 +2396,22 @@ class ChatAgent:
     def _should_autoselect_browse_candidate(self, candidates: list[dict[str, Any]]) -> bool:
         if not candidates:
             return False
+        best = candidates[0]
         alias_class = str(candidates[0].get("alias_class") or "SAFE").upper()
         if alias_class in {"UNSAFE", "AMBIGUOUS"}:
             return False
-        if len(candidates) == 1:
-            return True
-        best = candidates[0]
-        second = candidates[1]
         best_score = float(best.get("score") or 0.0)
+        has_strong_signal = bool(best.get("exact_match")) or bool(best.get("strong_match")) or best_score >= 0.74
+        if len(candidates) == 1:
+            return has_strong_signal
+        second = candidates[1]
         second_score = float(second.get("score") or 0.0)
-        return bool(best.get("has_profile_access")) and best_score >= 0.70 and (best_score - second_score) >= 0.12
+        return (
+            bool(best.get("has_profile_access"))
+            and has_strong_signal
+            and best_score >= 0.70
+            and (best_score - second_score) >= 0.12
+        )
 
     def _ensure_org_slots(
         self,
@@ -2270,12 +2454,7 @@ class ChatAgent:
             candidates = self.search_repository.find_city_candidates(slot_value, limit=8)
             tool_name = "find_city_candidates"
         elif slot_name == "department":
-            candidates = self.search_repository.find_department_candidates(
-                slot_value,
-                city=state.get("city_raw"),
-                position=state.get("position_raw"),
-                limit=8,
-            )
+            candidates = self._find_department_candidates_for_slot(slot_value, state, limit=8)
             tool_name = "find_department_candidates"
         elif slot_name == "position":
             candidates = self.search_repository.find_position_candidates(
@@ -3511,6 +3690,153 @@ class ChatAgent:
 
         return best_score >= SYSTEM_ENTITY_MIN_SCORE
 
+    def _find_department_candidates_for_slot(
+        self,
+        value: str,
+        state: dict[str, Any],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        variants = self._department_lookup_variants(value)
+        canonical_variants = variants[:-1] if variants and normalize_text(variants[-1]) == normalize_text(value) else variants
+        literal_variant = variants[-1] if variants and normalize_text(variants[-1]) == normalize_text(value) else value
+
+        canonical_candidates = self._find_department_candidates_for_variants(canonical_variants, state, limit, skip_echo=True)
+        canonical_candidates = self._filter_weak_city_incompatible_department_candidates(canonical_candidates, state)
+        if canonical_candidates:
+            requested_number = self._department_number_from_text(value)
+            if requested_number is not None:
+                numbered_candidates = self._filter_department_candidates_by_number(canonical_candidates, requested_number)
+                if numbered_candidates:
+                    return numbered_candidates[:limit]
+            return canonical_candidates[:limit]
+
+        literal_candidates = self._find_department_candidates_for_variants([literal_variant], state, limit, skip_echo=False)
+        literal_candidates = self._filter_weak_city_incompatible_department_candidates(literal_candidates, state)
+        return literal_candidates[:limit]
+
+    def _find_department_candidates_for_variants(
+        self,
+        variants: list[str],
+        state: dict[str, Any],
+        limit: int,
+        skip_echo: bool = False,
+    ) -> list[dict[str, Any]]:
+        deduped: dict[str, dict[str, Any]] = {}
+        for variant in variants:
+            if not self._clean_slot_text(variant):
+                continue
+            candidates = self.search_repository.find_department_candidates(
+                variant,
+                city=state.get("city_raw"),
+                position=state.get("position_raw"),
+                limit=limit,
+            )
+            for candidate in candidates:
+                value = self._clean_slot_text(candidate.get("value"))
+                if not value:
+                    continue
+                if skip_echo and normalize_text(value) == normalize_text(variant):
+                    continue
+                payload = dict(candidate)
+                payload.setdefault("source_query_variant", variant)
+                key = normalize_text(value)
+                current = deduped.get(key)
+                if current is None or float(payload.get("score") or 0.0) > float(current.get("score") or 0.0):
+                    deduped[key] = payload
+        return sorted(deduped.values(), key=lambda item: float(item.get("score") or 0.0), reverse=True)
+
+    @classmethod
+    def _department_lookup_variants(cls, value: str) -> list[str]:
+        cleaned = cls._clean_slot_text(value)
+        if not cleaned:
+            return []
+        number = cls._department_number_from_text(cleaned)
+        variants: list[str] = []
+        if number is not None:
+            variants.extend(
+                [
+                    str(number),
+                    f"№{number}",
+                    f"номер {number}",
+                    f"отдел {number}",
+                    f"отдел №{number}",
+                ]
+            )
+        variants.append(cleaned)
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for variant in variants:
+            key = normalize_text(variant)
+            if key and key not in seen:
+                seen.add(key)
+                deduped.append(variant)
+        return deduped
+
+    @staticmethod
+    def _department_number_from_text(value: str) -> Optional[int]:
+        normalized = normalize_text(value)
+        if not normalized:
+            return None
+        words = normalized.split()
+        for word in words:
+            if word in DEPARTMENT_ORDINAL_NUMBERS:
+                return DEPARTMENT_ORDINAL_NUMBERS[word]
+        numeric_tokens = [int(token) for token in words if token.isdigit()]
+        if len(numeric_tokens) == 1:
+            return numeric_tokens[0]
+        return None
+
+    @classmethod
+    def _first_department_candidate_with_number(
+        cls,
+        candidates: list[dict[str, Any]],
+        requested_number: int,
+    ) -> Optional[dict[str, Any]]:
+        for candidate in candidates:
+            if cls._department_number_from_candidate(candidate.get("value")) == requested_number:
+                return candidate
+        return None
+
+    @classmethod
+    def _filter_department_candidates_by_number(
+        cls,
+        candidates: list[dict[str, Any]],
+        requested_number: int,
+    ) -> list[dict[str, Any]]:
+        return [
+            candidate
+            for candidate in candidates
+            if cls._department_number_from_candidate(candidate.get("value")) == requested_number
+        ]
+
+    @staticmethod
+    def _department_number_from_candidate(value: str | None) -> Optional[int]:
+        text = str(value or "")
+        match = re.search(r"(?:№|номер\s+)(\d+)\b", text, flags=re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+        return None
+
+    @staticmethod
+    def _filter_weak_city_incompatible_department_candidates(
+        candidates: list[dict[str, Any]],
+        state: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        if not state.get("city_raw"):
+            return candidates
+        filtered: list[dict[str, Any]] = []
+        for candidate in candidates:
+            if candidate.get("city_compatibility") is None:
+                filtered.append(candidate)
+                continue
+            score = float(candidate.get("score") or 0.0)
+            text_score = float(candidate.get("department_text_score") or 0.0)
+            city_score = float(candidate.get("city_compatibility") or 0.0)
+            if city_score <= 0.0 and score < 0.45 and text_score < 0.45:
+                continue
+            filtered.append(candidate)
+        return filtered
+
     def _validate_entity_value_for_org_slot(
         self,
         session_id: str,
@@ -3526,12 +3852,7 @@ class ChatAgent:
             if slot_name == "city":
                 candidates = self.search_repository.find_city_candidates(value, limit=5)
             elif slot_name == "department":
-                candidates = self.search_repository.find_department_candidates(
-                    value,
-                    city=state.get("city_raw"),
-                    position=state.get("position_raw"),
-                    limit=5,
-                )
+                candidates = self._find_department_candidates_for_slot(value, state, limit=5)
             elif slot_name == "position":
                 candidates = self.search_repository.find_position_candidates(
                     value,
@@ -3606,6 +3927,17 @@ class ChatAgent:
                 "exact": True,
                 "canonical_value": self._clean_slot_text(exact_candidate.get("value")) or value,
             }
+
+        if slot_name == "department":
+            requested_number = self._department_number_from_text(value)
+            if requested_number is not None:
+                numbered_candidate = self._first_department_candidate_with_number(candidates, requested_number)
+                if numbered_candidate:
+                    return {
+                        "valid": True,
+                        "exact": True,
+                        "canonical_value": self._clean_slot_text(numbered_candidate.get("value")) or value,
+                    }
 
         best = candidates[0]
         best_score = float(best.get("score") or 0.0)

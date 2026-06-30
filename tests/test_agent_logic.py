@@ -914,6 +914,93 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(state.get("system_raw"), self.repo.systems[21]["system_name_raw"])
         self.assertEqual(state.get("department_raw"), "Отдел экспертизы финансовых институтов")
 
+    def test_pending_department_system_discovery_gate_does_not_replace_resolved_system(self) -> None:
+        base_system = "ЕФС База знаний SberHelp (ПРОМ) (И3) [CI06055442]"
+        mafin_system = "АС Мониторинг и анализ финансовых институтов (MAFIN) (ПРОМ) (И2) [CI04499081] - МАФИН"
+        self.repo.systems[50] = {
+            "id": 50,
+            "system_name_raw": base_system,
+            "ci_code": "CI06055442",
+        }
+        self.repo.systems[60] = {
+            "id": 60,
+            "system_name_raw": mafin_system,
+            "ci_code": "CI04499081",
+        }
+        self.repo.system_candidates_map["фин институты"] = [
+            {
+                "system_id": 60,
+                "system_name_raw": mafin_system,
+                "ci_code": "CI04499081",
+                "alias_text": mafin_system,
+                "alias_class": "SAFE",
+                "score": 1.0,
+                "matched_by": ["exact"],
+            }
+        ]
+        self.repo.department_candidates_map[("фин институты", "Москва")] = [
+            {
+                "value": "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ",
+                "score": 1.0,
+            }
+        ]
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="ROLE_DISCOVERY",
+            last_intent_type="ROLE_DISCOVERY",
+            system_raw=base_system,
+            resolved_system_id=50,
+            position_raw="Специалист",
+            city_raw="Москва",
+            conversation_phase="COLLECT_DEPARTMENT",
+            pending_question={
+                "kind": "slot_request",
+                "topic": "department",
+                "prompt": "Укажите ваш отдел или подразделение.",
+            },
+        )
+
+        def scripted_complete_json(system_prompt: str, user_prompt: str, model=None, max_tokens=None):
+            if "детектор сценария запроса" in system_prompt:
+                return {
+                    "target": "SYSTEM_LIST",
+                    "confidence": 0.8,
+                    "reason": "misclassified_department_as_system_scope",
+                }
+            if "детектор запроса инструкции" in system_prompt:
+                return {
+                    "is_instruction_request": False,
+                    "confidence": 1.0,
+                    "reason": "department_answer",
+                }
+            return {
+                "dialog_act": "PROVIDE_SLOT",
+                "intent_type": "ROLE_DISCOVERY",
+                "entities": {
+                    "department_raw": "фин институты",
+                },
+                "slot_candidates": {},
+                "confidence": 1.0,
+                "goal_transition": "STAY",
+                "needs_clarification": False,
+                "references_pending_question": True,
+                "user_correction": False,
+                "context_shift": "NONE",
+                "reasoning_trace_short": "department_answer",
+            }
+
+        self.agent.gigachat.complete_json = scripted_complete_json
+
+        self.agent.handle_message("s1", "фин институты")
+        state = self.repo.get_slot_state("s1")
+
+        self.assertEqual(state.get("resolved_system_id"), 50)
+        self.assertEqual(state.get("system_raw"), base_system)
+        self.assertEqual(
+            state.get("department_raw"),
+            "Отдел экспертизы кредитных рисков финансовых институтов (10331828); - ОЭКРФИ, ФИ",
+        )
+
     def test_pending_department_extracts_expected_slot_from_mixed_reply(self) -> None:
         self.repo.systems[21] = {
             "id": 21,
@@ -1257,6 +1344,182 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         response = self.agent.handle_message("s1", "Как получить доступ?")
         self.assertEqual(response.answer.answer_type, "INSTRUCTION_LOOKUP")
         self.assertIn("SberHelp", response.assistant_text)
+
+    def test_role_list_question_overrides_instruction_lookup_after_instruction_answer(self) -> None:
+        system_name = "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161]"
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="INSTRUCTION_LOOKUP",
+            last_intent_type="INSTRUCTION_LOOKUP",
+            conversation_phase="ANSWER_INSTRUCTION",
+            instruction_mode="INLINE_DOC",
+            system_raw=system_name,
+            system_query_raw="ЕФС Риск-Решения",
+            resolved_system_id=53,
+        )
+        self.repo.systems[53] = {
+            "id": 53,
+            "system_name_raw": system_name,
+            "ci_code": "[CI04206161]",
+        }
+        self.repo.system_candidates_map["ЕФС Риск Решения"] = [
+            {
+                "system_id": 53,
+                "system_name_raw": system_name,
+                "alias_text": "ЕФС Риск-Решения",
+                "score": 0.92,
+            }
+        ]
+
+        def force_instruction_lookup(*_args, **_kwargs):
+            return {
+                "dialog_act": "ASK_HELP",
+                "intent_type": "INSTRUCTION_LOOKUP",
+                "entities": {"system_raw": "ЕФС Риск Решения"},
+                "slot_candidates": {},
+                "context_shift": "CHANGE_SYSTEM_FOCUS",
+                "confidence": 0.9,
+                "goal_transition": "STAY",
+                "needs_clarification": False,
+                "references_pending_question": False,
+                "user_correction": False,
+                "reasoning_trace_short": "prod_like_instruction_miss",
+            }
+
+        self.agent.gigachat.complete_json = force_instruction_lookup
+
+        response = self.agent.handle_message("s1", "какие роли мне доступны для АС ЕФС Риск-решения?")
+
+        self.assertEqual(response.intent_type, "ROLE_DISCOVERY")
+        self.assertIsNone(response.answer)
+        self.assertIsNotNone(response.pending_question)
+        self.assertEqual(response.pending_question.topic, "position")
+        self.assertEqual(self.repo.get_slot_state("s1")["active_goal"], "ROLE_DISCOVERY")
+
+    def test_process_role_request_stays_instruction_lookup(self) -> None:
+        system_name = "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161]"
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="INSTRUCTION_LOOKUP",
+            last_intent_type="INSTRUCTION_LOOKUP",
+            conversation_phase="ANSWER_INSTRUCTION",
+            instruction_mode="INLINE_DOC",
+            system_raw=system_name,
+            resolved_system_id=53,
+        )
+        self.repo.systems[53] = {
+            "id": 53,
+            "system_name_raw": system_name,
+            "ci_code": "[CI04206161]",
+        }
+
+        response = self.agent.handle_message("s1", "как запросить роль для ЕФС Риск-Решения?")
+
+        self.assertEqual(response.intent_type, "INSTRUCTION_LOOKUP")
+        self.assertEqual(response.answer.answer_type, "INSTRUCTION_LOOKUP")
+        self.assertIsNone(response.pending_question)
+
+    def test_access_list_query_with_full_context_overrides_instruction_lookup(self) -> None:
+        system_name = "АС Контроль Качества Андеррайтинга (АС ККА) (И3) [CI00366455]"
+        department = "Отдел экспертизы кредитных рисков корпоративных клиентов №2"
+        self.repo.systems[74] = {
+            "id": 74,
+            "system_name_raw": system_name,
+            "ci_code": "[CI00366455]",
+        }
+        self.repo.system_candidates_map["АС ККА"] = [
+            {
+                "system_id": 74,
+                "system_name_raw": system_name,
+                "ci_code": "[CI00366455]",
+                "alias_text": "АС ККА",
+                "alias_class": "SAFE",
+                "score": 1.0,
+            }
+        ]
+        self.repo.department_candidates_map[("2", None)] = [
+            {
+                "value": department,
+                "score": 0.92,
+                "department_text_score": 1.0,
+                "city_compatibility": 1.0,
+                "position_compatibility": 1.0,
+            }
+        ]
+        self.repo.context_access_map[("МСК", department, "Риск-менеджер", 74)] = (
+            [
+                {
+                    "profile_id": 701,
+                    "system_id": 74,
+                    "system_name": system_name,
+                    "entitlement_id": 501,
+                    "entitlement_type": "Роль",
+                    "entitlement_name": "Риск-менеджер ККА",
+                    "access_level": 1,
+                }
+            ],
+            [
+                {
+                    "profile_id": 701,
+                    "profile_code": "P000701",
+                    "profile_name": "Риск-менеджер МСК",
+                    "profile_type": "Основной",
+                    "match_score": 0.93,
+                }
+            ],
+        )
+
+        def force_instruction_lookup(*_args, **_kwargs):
+            return {
+                "dialog_act": "ASK_HELP",
+                "intent_type": "INSTRUCTION_LOOKUP",
+                "entities": {
+                    "system_raw": "АС ККА",
+                    "city_raw": "МСК",
+                    "department_raw": "отдел №2",
+                    "position_raw": "Риск-менеджер",
+                },
+                "slot_candidates": {},
+                "context_shift": "NONE",
+                "confidence": 0.9,
+                "goal_transition": "START",
+                "needs_clarification": False,
+                "references_pending_question": False,
+                "user_correction": False,
+                "reasoning_trace_short": "prod_like_access_list_instruction_miss",
+            }
+
+        self.agent.gigachat.complete_json = force_instruction_lookup
+
+        response = self.agent.handle_message("s1", "доступы в АС ККА, МСК отдел №2, Риск-менеджер")
+
+        self.assertEqual(response.intent_type, "ROLE_DISCOVERY")
+        self.assertEqual(response.answer.answer_type, "ROLE_DISCOVERY")
+        self.assertIn("Риск-менеджер ККА", response.assistant_text)
+        self.assertNotIn("Для получения доступа", response.assistant_text)
+
+    def test_process_access_request_stays_instruction_lookup(self) -> None:
+        def force_instruction_lookup(*_args, **_kwargs):
+            return {
+                "dialog_act": "ASK_HELP",
+                "intent_type": "INSTRUCTION_LOOKUP",
+                "entities": {"system_raw": "АС ККА"},
+                "slot_candidates": {},
+                "context_shift": "NONE",
+                "confidence": 0.9,
+                "goal_transition": "START",
+                "needs_clarification": False,
+                "references_pending_question": False,
+                "user_correction": False,
+                "reasoning_trace_short": "process_access_request",
+            }
+
+        self.agent.gigachat.complete_json = force_instruction_lookup
+
+        response = self.agent.handle_message("s1", "как получить доступ к АС ККА?")
+
+        self.assertEqual(response.intent_type, "INSTRUCTION_LOOKUP")
+        self.assertEqual(response.answer.answer_type, "INSTRUCTION_LOOKUP")
 
     def test_show_more_works_for_candidate_sets(self) -> None:
         candidate_set = self.repo.create_candidate_set(
@@ -2029,6 +2292,86 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(response.pending_question.kind, "candidate_selection")
         self.assertGreaterEqual(len(response.pending_question.options), 2)
 
+    def test_department_ordinal_word_resolves_numbered_department_before_weak_literal_match(self) -> None:
+        department = "Отдел экспертизы кредитных рисков корпоративных клиентов №2"
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="SYSTEM_DISCOVERY",
+            last_intent_type="SYSTEM_DISCOVERY",
+            position_raw="Риск-менеджер",
+            city_raw="Самара",
+            conversation_phase="COLLECT_DEPARTMENT",
+            pending_question={
+                "kind": "slot_request",
+                "topic": "department",
+                "prompt": "Укажите ваш отдел или подразделение.",
+            },
+        )
+        self.repo.department_candidates_map[("второй", "Самара")] = [
+            {
+                "value": "Методолог КК",
+                "score": 0.3833,
+                "department_text_score": 0.3333,
+                "city_compatibility": 0.0,
+                "position_compatibility": 1.0,
+            }
+        ]
+        self.repo.department_candidates_map[("2", "Самара")] = [
+            {
+                "value": department,
+                "score": 0.91,
+                "department_text_score": 1.0,
+                "city_compatibility": 1.0,
+                "position_compatibility": 1.0,
+            }
+        ]
+        self.repo.context_system_map[("Самара", department, "Риск-менеджер")] = [
+            {
+                "system_id": 18,
+                "system_name_raw": "ЕФС.Сотрудники.Риск-решения (ПРОМ) (И2) [CI04206161]",
+                "ci_code": "[CI04206161]",
+                "score": 0.91,
+            }
+        ]
+
+        response = self.agent.handle_message("s1", "второй")
+        state = self.repo.get_slot_state("s1")
+
+        self.assertEqual(state.get("department_raw"), department)
+        self.assertNotIn("Методолог КК", response.assistant_text)
+        self.assertNotEqual(response.pending_question.topic if response.pending_question else None, "department")
+
+    def test_department_weak_city_incompatible_candidate_prompts_clarification(self) -> None:
+        self.repo.update_slot_state(
+            "s1",
+            active_goal="SYSTEM_DISCOVERY",
+            last_intent_type="SYSTEM_DISCOVERY",
+            position_raw="Риск-менеджер",
+            city_raw="Самара",
+            conversation_phase="COLLECT_DEPARTMENT",
+            pending_question={
+                "kind": "slot_request",
+                "topic": "department",
+                "prompt": "Укажите ваш отдел или подразделение.",
+            },
+        )
+        self.repo.department_candidates_map[("непонятный", "Самара")] = [
+            {
+                "value": "Методолог КК",
+                "score": 0.3833,
+                "department_text_score": 0.3333,
+                "city_compatibility": 0.0,
+                "position_compatibility": 1.0,
+            }
+        ]
+
+        response = self.agent.handle_message("s1", "непонятный")
+
+        self.assertNotIn("Методолог КК", response.assistant_text)
+        self.assertIsNotNone(response.pending_question)
+        self.assertEqual(response.pending_question.topic, "department")
+        self.assertEqual(response.pending_question.kind, "slot_request")
+
     def test_department_candidate_selection_updates_slot(self) -> None:
         self.repo.update_slot_state(
             "s1",
@@ -2321,6 +2664,70 @@ class AgentDialogRefactorTestCase(unittest.TestCase):
         self.assertEqual(response.conversation_phase, "BROWSE_SYSTEMS")
         self.assertEqual(len(response.pending_question.options), 5)
         self.assertIn("Я нашел несколько АС", response.assistant_text)
+
+    def test_single_weak_browse_system_candidate_is_not_auto_selected(self) -> None:
+        def scripted_complete_json(system_prompt: str, user_prompt: str, model=None, max_tokens=None):
+            return {
+                "dialog_act": "PROVIDE_SLOT",
+                "intent_type": "INSTRUCTION_LOOKUP",
+                "entities": {
+                    "system_raw": "АС ОКК",
+                    "city_raw": "НСК",
+                    "department_raw": "отдел контроля качества",
+                },
+                "slot_candidates": {},
+                "confidence": 1.0,
+                "goal_transition": "START",
+                "needs_clarification": False,
+                "references_pending_question": False,
+                "user_correction": False,
+                "context_shift": "NONE",
+                "reasoning_trace_short": "production_522490bd",
+            }
+
+        self.agent.gigachat.complete_json = scripted_complete_json
+        self.repo.system_browse_map["АС ОКК"] = [
+            {
+                "system_id": 45,
+                "system_name_raw": "АС Управление моделями Cash Flow (АС CF) (И3) [CI00898671] - CF",
+                "ci_code": "CI00898671",
+                "alias_text": "АС CF",
+                "alias_class": "SAFE",
+                "score": 0.5455,
+                "exact_match": False,
+                "strong_match": False,
+                "matched_by": ["trigram"],
+                "has_profile_access": False,
+                "profiles_count": 0,
+                "collision_count": 1,
+            }
+        ]
+
+        response = self.agent.handle_message("s1", "как получить доступ к АС ОКК, я работаю в НСК в отделе контроля качества")
+        state = self.repo.get_slot_state("s1")
+
+        self.assertIsNone(state.get("resolved_system_id"))
+        self.assertEqual(state.get("system_raw"), "АС ОКК")
+        self.assertEqual(response.pending_question.topic, "system")
+        self.assertEqual(response.conversation_phase, "COLLECT_SYSTEM_HINT")
+
+    def test_single_exact_browse_system_candidate_can_be_auto_selected(self) -> None:
+        candidate = {
+            "system_id": 45,
+            "system_name_raw": "АС Управление моделями Cash Flow (АС CF) (И3) [CI00898671] - CF",
+            "ci_code": "CI00898671",
+            "alias_text": "АС CF",
+            "alias_class": "SAFE",
+            "score": 1.0,
+            "exact_match": True,
+            "strong_match": True,
+            "matched_by": ["exact"],
+            "has_profile_access": False,
+            "profiles_count": 0,
+            "collision_count": 1,
+        }
+
+        self.assertTrue(self.agent._should_autoselect_browse_candidate([candidate]))
 
     def test_browse_system_show_more_without_more_candidates_requests_hint(self) -> None:
         candidate_set = self.repo.create_candidate_set(
